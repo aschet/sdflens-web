@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="description" content="View ISO 25178-71 SDF and ISO 25178-72 x3p surface files in the browser. The files stay on your computer.">
+  <title>sdflens web</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%232f6fb0'/%3E%3Cpath d='M4 22c4-10 7-10 10-4s6 6 14-8' fill='none' stroke='white' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E">
+</head>
+<body>
+<div id="app" data-state="empty" data-view="3d">
+  <header class="bar">
+    <div class="brand" aria-label="sdflens web"><svg viewBox="0 0 32 32" width="22" height="22" aria-hidden="true"><rect width="32" height="32" rx="7" fill="currentColor"/><path d="M4 22c4-10 7-10 10-4s6 6 14-8" fill="none" stroke="var(--surface)" stroke-width="3" stroke-linecap="round"/></svg><span>sdflens</span></div>
+    <div id="fileName" class="file-name" title=""></div>
+    <div class="segmented views" role="tablist" aria-label="View">
+      <button role="tab" data-view="3d" aria-selected="true" title="3D view (1)" aria-label="3D view"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M12 3l8 4.5v9L12 21l-8-4.5v-9zM12 12l8-4.5M12 12v9M12 12L4 7.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/></svg></button>
+      <button role="tab" data-view="2d" aria-selected="false" title="2D view (2)" aria-label="2D view"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M4 9.3h16M4 14.7h16M9.3 4v16M14.7 4v16" stroke="currentColor" stroke-width="1.4" opacity=".55"/><rect x="9.8" y="9.8" width="4.4" height="4.4" fill="currentColor" opacity=".5"/><rect x="14.7" y="4.9" width="4.4" height="4.4" fill="currentColor" opacity=".3"/><rect x="4.9" y="14.7" width="4.4" height="4.4" fill="currentColor" opacity=".3"/></svg></button>
+      <button role="tab" data-view="profile" aria-selected="false" title="Profile view (3)" aria-label="Profile view"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M4 4v16h16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M7 15.5c1.8-6 3.2-6 5-1.2s3.4 3.6 6-5.8" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
+    </div>
+    <div class="actions">
+      <button id="openButton" class="button primary icon" title="Open a file (O)" aria-label="Open a file"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      <button id="displayButton" class="button icon" aria-expanded="false" aria-controls="display" title="Display: colors, render mode and height scale" aria-label="Display options"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M4 7h9M17 7h3M4 17h3M11 17h9" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><circle cx="15" cy="7" r="2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><circle cx="9" cy="17" r="2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      <button id="infoButton" class="button icon" aria-expanded="false" aria-controls="drawer" title="File information (I)" aria-label="File information"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 11v6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="7.6" r="1.1" fill="currentColor"/></svg></button>
+      <button id="shotButton" class="button icon" title="Save the view as an image" aria-label="Save the view as an image"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="1.8"/></svg></button>
+      <button id="themeButton" class="button icon" title="Switch between light and dark" aria-label="Switch between light and dark"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4 8 8 0 1 0 20 14.5z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg></button>
+    </div>
+  </header>
+
+  <main class="stage" id="stage">
+    <div id="view3d" class="view" hidden></div>
+    <div id="view2d" class="view" hidden></div>
+    <div id="viewProfile" class="view" hidden></div>
+
+    <div class="tools floating" id="tools" role="toolbar" aria-label="View tools">
+      <button class="tool" data-tool="rotate" aria-pressed="true" title="Rotate (R)" aria-label="Rotate"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M20 12a8 8 0 1 1-3-6.2M20 4v5h-5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      <button class="tool" data-tool="pan" aria-pressed="false" title="Pan (P)" aria-label="Pan"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M12 3v18M3 12h18M12 3l-3 3M12 3l3 3M12 21l-3-3M12 21l3-3M3 12l3-3M3 12l3 3M21 12l-3-3M21 12l-3 3" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      <button class="tool" data-tool="zoom" aria-pressed="false" title="Zoom by dragging (Z)" aria-label="Zoom"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M15 15l5.5 5.5M8 10.5h5M10.5 8v5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
+      <span class="rule"></span>
+      <button class="tool" id="zoomInButton" title="Zoom in (+)" aria-label="Zoom in"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
+      <button class="tool" id="zoomOutButton" title="Zoom out (-)" aria-label="Zoom out"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M5 12h14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
+      <button class="tool" id="homeButton" title="Fit to the view (H)" aria-label="Fit to the view"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+    </div>
+
+    <div class="stepper floating" id="layerBar" hidden>
+      <button id="layerPrev" aria-label="Previous layer" title="Previous layer ([)">‹</button>
+      <span id="layerLabel">Layer 1 / 1</span>
+      <button id="layerNext" aria-label="Next layer" title="Next layer (])">›</button>
+    </div>
+
+    <div class="profile-bar floating" id="profileBar" hidden>
+      <div class="segmented small" id="profileDirection" role="group" aria-label="Direction of the profile"><button data-axis="x" aria-pressed="true" title="Profiles along x (rows)" aria-label="Along x"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M4 12h16M15 7l5 5-5 5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button><button data-axis="y" aria-pressed="false" title="Profiles along y (columns)" aria-label="Along y"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M12 20V4M7 9l5-5 5 5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div>
+      <input id="profileSlider" type="range" min="1" max="1" value="1" aria-label="Profile">
+      <span id="profileLabel">1 / 1</span>
+    </div>
+
+    <div id="colorbarBox" class="colorbar floating" hidden><canvas id="colorbar" aria-label="Color scale"></canvas></div>
+
+    <div id="readout" class="readout floating" role="status" aria-live="polite"></div>
+
+    <div id="busy" class="busy" hidden><div class="spinner"></div><span id="busyText">Reading the file</span></div>
+    <div id="toast" class="toast" role="alert" hidden></div>
+
+    <section id="landing" class="landing">
+      <div class="card">
+        <svg viewBox="0 0 64 64" width="72" height="72" aria-hidden="true"><rect width="64" height="64" rx="14" fill="var(--accent)"/><path d="M8 44c8-20 14-20 20-8s12 12 28-16" fill="none" stroke="#fff" stroke-width="5" stroke-linecap="round"/></svg>
+        <h1>View surface measurements</h1>
+        <p>Open an ISO 25178-71 <b>.sdf</b> or an ISO 25178-72 <b>.x3p</b> file. Drop it anywhere on this page, or choose it. Everything happens in your browser; the file is not uploaded.</p>
+        <div class="card-actions">
+          <button id="landingOpen" class="button primary large">Choose a file</button>
+        </div>
+        <div class="samples">
+          <span>or try a sample</span>
+          <div id="sampleList" class="sample-list"></div>
+        </div>
+        <p class="fine">Views: 3D surface, 2D height map and profile. Supports profiles, surfaces, irregular surfaces, point clouds and layers.</p>
+      </div>
+    </section>
+    <div id="dropHint" class="drop-hint" hidden>Drop the file to open it</div>
+  </main>
+
+  <aside id="display" class="popover" hidden aria-label="Display options">
+    <label class="field"><span>Colormap</span><select id="colormapSelect"></select></label>
+    <label class="check"><input id="reverseCheck" type="checkbox"> Reverse colors</label>
+    <div class="field" id="modeField"><span>Render mode</span>
+      <div class="segmented small" id="modeButtons" role="group" aria-label="Render mode">
+        <button data-mode="surface" aria-pressed="true" title="Surface" aria-label="Surface"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M3 15c3-5.5 6-5.5 9 0s6 5.5 9 0v4.5H3z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        <button data-mode="wireframe" aria-pressed="false" title="Grid lines" aria-label="Grid lines"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M3 17l5-10h13l-5 10zM5.6 12h13M12.4 7l-5 10M16.7 7l-5 10" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        <button data-mode="points" aria-pressed="false" title="Points" aria-label="Points"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><circle cx="6" cy="7" r="1.7" fill="currentColor"/><circle cx="12" cy="6" r="1.7" fill="currentColor"/><circle cx="18" cy="8" r="1.7" fill="currentColor"/><circle cx="8" cy="12" r="1.7" fill="currentColor"/><circle cx="14" cy="12" r="1.7" fill="currentColor"/><circle cx="19" cy="14" r="1.7" fill="currentColor"/><circle cx="5" cy="17" r="1.7" fill="currentColor"/><circle cx="11" cy="18" r="1.7" fill="currentColor"/><circle cx="17" cy="18" r="1.7" fill="currentColor"/></svg></button>
+      </div>
+    </div>
+    <label class="field" id="zField"><span>Height scale <output id="zOutput">×1</output></span><input id="zSlider" type="range" min="0" max="1000" value="400"></label>
+    <button id="zReset" class="link" type="button">Reset height scale</button>
+  </aside>
+
+  <aside id="drawer" class="drawer" hidden aria-label="File information">
+    <div class="drawer-head"><h2>Information</h2><button id="drawerClose" class="button icon" aria-label="Close the information">✕</button></div>
+    <div id="infoBody" class="drawer-body"></div>
+    <footer class="drawer-foot"><a href="https://github.com/aschet/sdflens-web" target="_blank" rel="noopener">sdflens web</a> · GPL-3.0-or-later · <button id="shortcuts" class="link" type="button">Keyboard shortcuts</button></footer>
+  </aside>
+
+  <dialog id="shortcutDialog">
+    <h2>Keyboard shortcuts</h2>
+    <dl class="keys">
+      <dt>1 2 3</dt><dd>3D, 2D and profile view</dd>
+      <dt>O</dt><dd>Open a file</dd>
+      <dt>H</dt><dd>Fit the view</dd>
+      <dt>R P Z</dt><dd>Rotate, pan and zoom tool</dd>
+      <dt>+ −</dt><dd>Zoom in and out</dd>
+      <dt>[ ]</dt><dd>Previous and next layer</dd>
+      <dt>← →</dt><dd>Previous and next profile</dd>
+      <dt>I</dt><dd>File information</dd>
+    </dl>
+    <form method="dialog"><button class="button primary">Close</button></form>
+  </dialog>
+
+  <input id="fileInput" type="file" accept=".sdf,.x3p,application/zip" hidden>
+</div>
+<script type="module" src="/src/main.ts"></script>
+</body>
+</html>

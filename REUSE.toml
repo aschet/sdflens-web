@@ -1,0 +1,16 @@
+version = 1
+
+[[annotations]]
+path = ["README.md", "index.html", "package.json", "package-lock.json", "tsconfig.json", ".gitignore", ".github/**", "THIRD-PARTY-NOTICES.txt", "test/expected.json", "LICENSE"]
+SPDX-FileCopyrightText = "2026 Thomas Ascher <thomas.ascher@gmx.at>"
+SPDX-License-Identifier = "GPL-3.0-or-later"
+
+[[annotations]]
+path = ["src/samples/microlens-array.sdf"]
+SPDX-FileCopyrightText = "2026 Thomas Ascher <thomas.ascher@gmx.at>"
+SPDX-License-Identifier = "GPL-3.0-or-later"
+
+[[annotations]]
+path = ["src/samples/layered-surface.x3p", "src/samples/point-cloud.x3p", "test/samples/*.sdf", "test/samples/*.x3p"]
+SPDX-FileCopyrightText = "2026 Thomas Ascher <thomas.ascher@gmx.at>"
+SPDX-License-Identifier = "CC0-1.0"

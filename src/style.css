@@ -1,0 +1,821 @@
+/*
+SPDX-FileCopyrightText: 2026 Thomas Ascher <thomas.ascher@gmx.at>
+
+SPDX-License-Identifier: GPL-3.0-or-later
+*/
+
+:root {
+  color-scheme: light dark;
+  --bg: #f3f4f6;
+  --surface: #ffffff;
+  --stage: #eceef2;
+  --text: #1c2026;
+  --muted: #5b6573;
+  --border: #d5dae1;
+  --accent: #2f6fb0;
+  --accent-text: #ffffff;
+  --hover: rgba(47, 111, 176, 0.1);
+  --shadow: 0 2px 10px rgba(20, 30, 50, 0.14);
+  --radius: 10px;
+  --bar: 52px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #15161a;
+    --surface: #202227;
+    --stage: #1a1b1f;
+    --text: #e7e9ec;
+    --muted: #9ba4af;
+    --border: #353840;
+    --accent: #5aa2e8;
+    --accent-text: #0d1117;
+    --hover: rgba(90, 162, 232, 0.16);
+    --shadow: 0 2px 12px rgba(0, 0, 0, 0.5);
+  }
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #15161a;
+  --surface: #202227;
+  --stage: #1a1b1f;
+  --text: #e7e9ec;
+  --muted: #9ba4af;
+  --border: #353840;
+  --accent: #5aa2e8;
+  --accent-text: #0d1117;
+  --hover: rgba(90, 162, 232, 0.16);
+  --shadow: 0 2px 12px rgba(0, 0, 0, 0.5);
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font: 14px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  overflow: hidden;
+  -webkit-text-size-adjust: 100%;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+#app {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  grid-template-rows: var(--bar) 1fr;
+}
+
+/* ---------------------------------------------------------------------------------------- header */
+
+.bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 12px;
+  padding-top: env(safe-area-inset-top);
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  min-width: 0;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 650;
+  color: var(--accent);
+  letter-spacing: 0.2px;
+}
+
+.brand span {
+  color: var(--text);
+}
+
+.file-name {
+  flex: 1 1 0;
+  min-width: 0;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.button {
+  appearance: none;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  height: 34px;
+  padding: 0 12px;
+  border-radius: 8px;
+  font: inherit;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.button:hover {
+  background: var(--hover);
+}
+
+.button:focus-visible,
+.tool:focus-visible,
+.segmented button:focus-visible,
+select:focus-visible,
+input:focus-visible,
+.link:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.button.primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-text);
+  font-weight: 600;
+}
+
+.button.primary:hover {
+  filter: brightness(1.08);
+}
+
+.button.icon {
+  width: 34px;
+  padding: 0;
+}
+
+.button.large {
+  height: 44px;
+  padding: 0 22px;
+  font-size: 15px;
+}
+
+.button[aria-expanded="true"] {
+  background: var(--hover);
+  border-color: var(--accent);
+}
+
+.segmented {
+  display: inline-flex;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  padding: 2px;
+  gap: 2px;
+}
+
+.segmented button {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  padding: 5px 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 7px;
+  cursor: pointer;
+}
+
+.segmented button[aria-selected="true"],
+.segmented button[aria-pressed="true"] {
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  font-weight: 600;
+}
+
+.segmented button[disabled] {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.segmented.small button {
+  padding: 4px 12px;
+  font-size: 13px;
+}
+
+/* ---------------------------------------------------------------------------------------- stage */
+
+.stage {
+  position: relative;
+  background: var(--stage);
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* The views leave room for the floating controls: tools on the left, the color bar on the right, and the
+   readout at the bottom. */
+.stage {
+  --rl: 64px;
+  --rr: 0px;
+  --rt: 0px;
+  --rb: 56px;
+}
+
+#app[data-view="3d"] .stage,
+#app[data-view="2d"] .stage {
+  --rr: 132px;
+}
+
+#app[data-view="profile"] .stage {
+  --rt: 56px;
+}
+
+#app[data-layers="many"] .stage {
+  --rt: 56px;
+}
+
+#app[data-layers="many"][data-view="profile"] .stage {
+  --rt: 104px;
+}
+
+.view {
+  position: absolute;
+  inset: var(--rt) var(--rr) var(--rb) var(--rl);
+}
+
+.view canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.floating {
+  position: absolute;
+  background: color-mix(in srgb, var(--surface) 92%, transparent);
+  backdrop-filter: blur(6px);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+.tools {
+  left: 12px;
+  top: 12px;
+  display: flex;
+  flex-direction: column;
+  padding: 4px;
+  gap: 2px;
+}
+
+.tool {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  width: 38px;
+  height: 38px;
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+
+.tool:hover {
+  background: var(--hover);
+  color: var(--text);
+}
+
+.tool[aria-pressed="true"] {
+  background: var(--hover);
+  color: var(--accent);
+}
+
+.tool[hidden] {
+  display: none;
+}
+
+.rule {
+  height: 1px;
+  background: var(--border);
+  margin: 3px 6px;
+}
+
+.stepper {
+  left: 50%;
+  top: 12px;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px;
+  font-variant-numeric: tabular-nums;
+}
+
+.stepper button {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  width: 32px;
+  height: 32px;
+  border-radius: 7px;
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.stepper button:hover {
+  background: var(--hover);
+}
+
+.stepper span {
+  min-width: 96px;
+  text-align: center;
+}
+
+.profile-bar {
+  left: 50%;
+  top: 12px;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 12px;
+  width: min(560px, calc(100% - 24px));
+}
+
+.profile-bar select {
+  flex: none;
+  width: auto;
+}
+
+.profile-bar input[type="range"] {
+  flex: 1 1 auto;
+  width: auto;
+  min-width: 80px;
+}
+
+.profile-bar span {
+  min-width: 78px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+}
+
+.colorbar canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.colorbar {
+  right: 12px;
+  top: 12px;
+  bottom: 56px;
+  width: 118px;
+  height: auto;
+}
+
+.readout {
+  left: 12px;
+  bottom: 12px;
+  right: 12px;
+  min-height: 34px;
+  padding: 6px 12px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.readout:empty {
+  display: none;
+}
+
+.readout.live {
+  color: var(--text);
+}
+
+/* ---------------------------------------------------------------------------------------- landing */
+
+.landing {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  overflow: auto;
+  background:
+    radial-gradient(circle at 20% 15%, color-mix(in srgb, var(--accent) 12%, transparent), transparent 45%),
+    radial-gradient(circle at 85% 90%, color-mix(in srgb, var(--accent) 10%, transparent), transparent 40%),
+    var(--stage);
+}
+
+#app:not([data-state="empty"]) .landing {
+  display: none;
+}
+
+#app[data-state="empty"] .floating,
+#app[data-state="empty"] #fileName,
+#app[data-state="empty"] #shotButton,
+#app[data-state="empty"] #displayButton,
+#app[data-state="empty"] #infoButton,
+#app[data-state="empty"] .views {
+  display: none;
+}
+
+#app[data-state="empty"] .bar {
+  justify-content: space-between;
+}
+
+.card {
+  width: min(560px, 100%);
+  text-align: center;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  box-shadow: var(--shadow);
+  padding: 34px 30px 26px;
+}
+
+.card h1 {
+  font-size: 24px;
+  margin: 16px 0 8px;
+  letter-spacing: -0.2px;
+}
+
+.card p {
+  margin: 8px auto;
+  max-width: 440px;
+  color: var(--muted);
+}
+
+.card-actions {
+  margin: 20px 0 16px;
+}
+
+.samples {
+  border-top: 1px solid var(--border);
+  padding-top: 14px;
+  margin-top: 8px;
+  color: var(--muted);
+}
+
+.sample-list {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.fine {
+  font-size: 12.5px;
+  margin-top: 18px !important;
+}
+
+.drop-hint {
+  position: absolute;
+  inset: 10px;
+  z-index: 20;
+  display: grid;
+  place-items: center;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--accent);
+  background: color-mix(in srgb, var(--surface) 78%, transparent);
+  border: 2px dashed var(--accent);
+  border-radius: 16px;
+  pointer-events: none;
+}
+
+.busy {
+  position: absolute;
+  inset: 0;
+  z-index: 15;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: center;
+  background: color-mix(in srgb, var(--stage) 70%, transparent);
+  backdrop-filter: blur(2px);
+}
+
+.spinner {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 3px solid var(--border);
+  border-top-color: var(--accent);
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.toast {
+  position: absolute;
+  z-index: 30;
+  left: 50%;
+  bottom: 62px;
+  transform: translateX(-50%);
+  max-width: min(560px, calc(100% - 24px));
+  background: #b3261e;
+  color: #fff;
+  padding: 10px 16px;
+  border-radius: 10px;
+  box-shadow: var(--shadow);
+}
+
+/* ---------------------------------------------------------------------------- popover and drawer */
+
+.popover {
+  position: absolute;
+  z-index: 25;
+  top: calc(var(--bar) + 8px);
+  right: 12px;
+  width: 270px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+  padding: 14px;
+  display: grid;
+  gap: 12px;
+}
+
+.field {
+  display: grid;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.field output {
+  float: right;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+.check {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+select,
+input[type="range"],
+input[type="number"] {
+  font: inherit;
+  color: var(--text);
+}
+
+select {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 6px 8px;
+  width: 100%;
+}
+
+input[type="range"] {
+  accent-color: var(--accent);
+  width: 100%;
+}
+
+.link {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: var(--accent);
+  font: inherit;
+  padding: 0;
+  cursor: pointer;
+  text-align: left;
+}
+
+.link:hover {
+  text-decoration: underline;
+}
+
+.drawer {
+  position: absolute;
+  z-index: 24;
+  top: var(--bar);
+  right: 0;
+  bottom: 0;
+  width: min(360px, 100%);
+  background: var(--surface);
+  border-left: 1px solid var(--border);
+  box-shadow: var(--shadow);
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+}
+
+.drawer-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+}
+
+.drawer-head h2 {
+  font-size: 15px;
+  margin: 0;
+}
+
+.drawer-body {
+  overflow: auto;
+  padding: 6px 14px 14px;
+}
+
+.drawer-body h3 {
+  margin: 16px 0 6px;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+
+.drawer-body dl {
+  margin: 0;
+  display: grid;
+  grid-template-columns: minmax(90px, 40%) 1fr;
+  gap: 4px 12px;
+}
+
+.drawer-body dt {
+  color: var(--muted);
+}
+
+.drawer-body dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+  font-variant-numeric: tabular-nums;
+}
+
+.drawer-foot {
+  padding: 10px 14px;
+  border-top: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 12.5px;
+}
+
+.drawer-foot a {
+  color: var(--accent);
+}
+
+dialog {
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 20px 24px;
+  box-shadow: var(--shadow);
+}
+
+dialog::backdrop {
+  background: rgba(0, 0, 0, 0.4);
+}
+
+dialog h2 {
+  margin: 0 0 10px;
+  font-size: 17px;
+}
+
+.keys {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 6px 18px;
+  margin: 0 0 16px;
+}
+
+.keys dt {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  color: var(--accent);
+}
+
+.keys dd {
+  margin: 0;
+}
+
+/* ---------------------------------------------------------------------------- narrow screens */
+
+#app[data-layers="many"][data-view="profile"] .profile-bar {
+  top: 60px;
+}
+
+@media (max-width: 760px) {
+  :root {
+    --bar: 116px;
+  }
+
+  #app[data-state="empty"] {
+    --bar: 52px;
+  }
+
+  .stage {
+    --rl: 0px;
+    --rb: 112px;
+  }
+
+  #app[data-view="3d"] .stage,
+  #app[data-view="2d"] .stage {
+    --rr: 108px;
+  }
+
+  .bar {
+    flex-wrap: wrap;
+    height: var(--bar);
+    align-content: center;
+    row-gap: 6px;
+    padding-top: 6px;
+    padding-bottom: 6px;
+  }
+
+  .brand span {
+    display: none;
+  }
+
+  .file-name {
+    order: 1;
+    flex: 1 1 40%;
+  }
+
+  .actions {
+    order: 2;
+  }
+
+  .views {
+    order: 3;
+    flex: 1 1 100%;
+  }
+
+  .views button {
+    flex: 1;
+  }
+
+  .tools {
+    top: auto;
+    bottom: 56px;
+    left: 50%;
+    transform: translateX(-50%);
+    flex-direction: row;
+  }
+
+  .rule {
+    width: 1px;
+    height: auto;
+    margin: 6px 3px;
+  }
+
+  .colorbar {
+    width: 100px;
+    bottom: 110px;
+  }
+
+  .drawer {
+    top: auto;
+    height: 62%;
+    width: 100%;
+    border-left: 0;
+    border-top: 1px solid var(--border);
+    border-radius: 14px 14px 0 0;
+  }
+
+  .popover {
+    left: 12px;
+    width: auto;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spinner {
+    animation-duration: 2.4s;
+  }
+}
