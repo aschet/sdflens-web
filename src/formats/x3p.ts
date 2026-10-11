@@ -6,7 +6,7 @@
 
 import { unzipSync } from "fflate";
 import { FormatError, type InfoSection, type Surface, type SurfaceFile } from "../model";
-import { describeFile, featureOf, formatDate, isPlaceholder, sizeText, stepText } from "./info";
+import { describeFile, featureOf, formatDate, sizeText, stepText } from "./info";
 
 interface Axis {
   absolute: boolean;
@@ -288,10 +288,6 @@ function describe(c: Context): InfoSection[] {
     for (const name of path) element = element ? child(element, name) : undefined;
     return text(element);
   };
-  const join = (parts: (string | undefined)[]): string | undefined => {
-    const given = parts.filter((part) => !isPlaceholder(part));
-    return given.length ? given.join(", ") : undefined;
-  };
 
   const rotation = child(c.axesElement, "Rotation");
   const offsets = ["CX", "CY", "CZ"].map((name) => Number(text(child(child(c.axesElement, name) as Element, "Offset")) ?? 0));
@@ -305,13 +301,18 @@ function describe(c: Context): InfoSection[] {
     step: regular ? stepText(feature, Math.abs(c.x.increment), Math.abs(c.y.increment)) : undefined,
     positions: regular ? undefined : "stored for every point",
     placement: turned || offsets.some((offset) => offset !== 0) ? "stored in the file, not applied" : undefined,
+    instrument: {
+      Manufacturer: value("Instrument", "Manufacturer"),
+      Model: value("Instrument", "Model"),
+      Serial: value("Instrument", "Serial"),
+      Version: value("Instrument", "Version"),
+      "Probing type": value("ProbingSystem", "Type"),
+      "Probing identification": value("ProbingSystem", "Identification"),
+      Calibrated: formatDate(value("CalibrationDate")),
+    },
     source: [
-      ["Manufacturer", value("Instrument", "Manufacturer")],
-      ["Instrument", join([value("Instrument", "Model"), value("Instrument", "Serial") && `serial ${value("Instrument", "Serial")}`, value("Instrument", "Version") && `version ${value("Instrument", "Version")}`])],
-      ["Probing system", join([value("ProbingSystem", "Type"), value("ProbingSystem", "Identification")])],
       ["Creator", value("Creator")],
       ["Created", formatDate(value("Date"))],
-      ["Calibrated", formatDate(value("CalibrationDate"))],
       ["Comment", value("Comment")],
     ],
   });

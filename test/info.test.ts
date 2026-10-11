@@ -19,8 +19,8 @@ describe("file information", () => {
   it("has the same sections for SDF and x3p, without the trailer and the metadata block", () => {
     for (const name of ["iso2_surface_binary.sdf", "x3pio_surface_binary.x3p", "bcr1_profile_ascii.sdf", "x3pio_point_cloud_binary.x3p"]) {
       const titles = Object.keys(info(name));
-      expect(titles.slice(0, 2)).toEqual(["File", "Data"]);
-      expect(titles.every((title) => ["File", "Data", "Source"].includes(title))).toBe(true);
+      expect(titles.slice(0, 3)).toEqual(["File", "Data", "Instrument"]);
+      expect(titles.every((title) => ["File", "Data", "Instrument", "Source"].includes(title))).toBe(true);
     }
   });
 
@@ -50,10 +50,19 @@ describe("file information", () => {
     expect(info("x3pio_surface_irregular_binary.x3p").Data).toMatchObject({ Positions: "stored for every point" });
   });
 
+  it("lists the fields of the instrument for both formats, with a dash for what a file does not give", () => {
+    const fields = ["Manufacturer", "Model", "Serial", "Version", "Probing type", "Probing identification", "Calibrated"];
+    const sdf = info("iso2_surface_binary.sdf").Instrument as Record<string, string>;
+    expect(Object.keys(sdf)).toEqual(fields);
+    expect(sdf).toMatchObject({ Manufacturer: "sdfio", Model: "-", Serial: "-", Calibrated: "-" });
+    const x3p = info("x3pio_surface_binary.x3p").Instrument as Record<string, string>;
+    expect(Object.keys(x3p)).toEqual(fields);
+    expect(x3p).toMatchObject({ Manufacturer: "x3pio", Model: "tests/samples/generate.py", Serial: "-", Version: "1", "Probing type": "Software" });
+  });
+
   it("lists where the data comes from, with the dates written the same way", () => {
-    expect(info("iso2_surface_binary.sdf").Source).toMatchObject({ Manufacturer: "sdfio", Created: "2026-01-01 12:00 UTC" });
-    const x3p = info("x3pio_surface_binary.x3p").Source as Record<string, string>;
-    expect(x3p).toMatchObject({ Manufacturer: "x3pio", Creator: "x3pio sample generator", Created: "2026-01-01 12:00 UTC" });
+    expect(info("iso2_surface_binary.sdf").Source).toMatchObject({ Created: "2026-01-01 12:00 UTC" });
+    expect(info("x3pio_surface_binary.x3p").Source).toMatchObject({ Creator: "x3pio sample generator", Created: "2026-01-01 12:00 UTC" });
   });
 
   it("formats dates and leaves out placeholders", () => {

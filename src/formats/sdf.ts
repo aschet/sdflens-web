@@ -361,8 +361,9 @@ function describe(header: Header): InfoSection[] {
     size: sizeText(feature, header.columns, header.rows),
     step: stepText(feature, header.xScale, header.yScale),
     resolution: header.zResolution < 0 ? undefined : formatLength(header.zResolution),
+    // An SDF file names only the manufacturer.
+    instrument: { Manufacturer: header.manufacturer },
     source: [
-      ["Manufacturer", header.manufacturer],
       ["Created", header.created],
       ["Modified", header.modified],
     ],

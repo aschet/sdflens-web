@@ -21,9 +21,14 @@ export interface Description {
   positions?: string;
   resolution?: string;
   placement?: string;
+  /** The fields of the instrument; those that a format does not have, or that are not given, show as "-". */
+  instrument: Partial<Record<InstrumentField, string>>;
   /** Where the data comes from; the entries without a value are left out. */
   source: [string, string | undefined][];
 }
+
+export const INSTRUMENT_FIELDS = ["Manufacturer", "Model", "Serial", "Version", "Probing type", "Probing identification", "Calibrated"] as const;
+export type InstrumentField = (typeof INSTRUMENT_FIELDS)[number];
 
 const PLACEHOLDER = /^(n\/a|not available|not set|none|unknown|-)?$/i;
 
@@ -70,7 +75,14 @@ export function describeFile(d: Description): InfoSection[] {
   if (d.positions) data.rows.push(["Positions", d.positions]);
   if (d.resolution) data.rows.push(["Height resolution", d.resolution]);
   if (d.placement) data.rows.push(["Placement", d.placement]);
-  const sections = [file, data];
+  const instrument: InfoSection = {
+    title: "Instrument",
+    rows: INSTRUMENT_FIELDS.map((field): [string, string] => {
+      const value = d.instrument[field];
+      return [field, isPlaceholder(value) ? "-" : (value as string)];
+    }),
+  };
+  const sections = [file, data, instrument];
   const source = d.source.filter((row): row is [string, string] => !isPlaceholder(row[1]));
   if (source.length) sections.push({ title: "Source", rows: source });
   return sections;
