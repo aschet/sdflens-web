@@ -18,19 +18,29 @@ import {
 import { buildMesh, type Mesh } from './render/mesh';
 import { ProfilePlot } from './render/profile';
 import { View2D } from './render/view2d';
+import { View3D, type RenderMode, type Tool } from './render/view3d';
 import {
-  View3D,
-  Z_FACTOR_MAX,
-  Z_FACTOR_MIN,
-  type RenderMode,
-  type Tool,
-} from './render/view3d';
+  alongAxis,
+  canRun,
+  middleProfile,
+  profileReadout,
+  profileSeries,
+  startAxis,
+} from './profiles';
 import { SAMPLES, type Sample } from './samples';
 import { Colorbar } from './ui/colorbar';
 import { Locator } from './ui/locator';
-import { formatExtent, formatLength } from './units';
-
-type ViewName = '3d' | '2d' | 'profile';
+import {
+  availableViews,
+  effectiveTool,
+  nextLayer,
+  screenshotName,
+  startView,
+  statusText,
+  type Availability,
+  type ViewName,
+} from './viewing';
+import { clampFactor, factorFromSlider, factorText, sliderFromFactor } from './zscale';
 
 // The type argument names the element type at the call site, as in $<HTMLCanvasElement>('id').
 // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters
@@ -173,21 +183,8 @@ function currentLut(): Uint8Array {
 }
 
 /** The views that can show the surface of the file. */
-function available(): Record<ViewName, string | null> {
-  const s = state.surface;
-  if (!s) return { '3d': 'No file', '2d': 'No file', profile: 'No file' };
-  const regular = s.kind === 'grid' && s.x === null;
-  return {
-    '3d': webglProblem,
-    '2d':
-      regular && s.rows > 1 && s.columns > 1
-        ? null
-        : 'Needs a surface on a regular grid',
-    profile:
-      regular || irregularProfile(s)
-        ? null
-        : 'Needs a profile or a surface on a regular grid',
-  };
+function available(): Availability {
+  return availableViews(state.surface, webglProblem);
 }
 
 function setView(name: ViewName): void {
@@ -237,12 +234,8 @@ function updateAvailability(): void {
   }
 }
 
-function effectiveTool(): Tool {
-  return state.view !== '3d' && state.tool === 'rotate' ? 'pan' : state.tool;
-}
-
 function updateTools(): void {
-  const effective = effectiveTool();
+  const effective = effectiveTool(state.view, state.tool);
   for (const button of document.querySelectorAll<HTMLButtonElement>(
     '.tool[data-tool]',
   )) {
@@ -298,20 +291,7 @@ async function openBytes(bytes: Uint8Array, name: string): Promise<void> {
     $('fileName').textContent = name;
     $('fileName').title = name;
     document.title = `${name} · sdflens web`;
-    const reasons = available();
-    const profileOnly =
-      state.surface !== null &&
-      state.surface.kind === 'grid' &&
-      (state.surface.rows === 1 || state.surface.columns === 1);
-    setView(
-      profileOnly && reasons.profile === null
-        ? 'profile'
-        : reasons['3d'] === null
-          ? '3d'
-          : reasons['2d'] === null
-            ? '2d'
-            : 'profile',
-    );
+    setView(startView(state.surface as Surface, available()));
   } catch (error) {
     toast(
       error instanceof FormatError
@@ -338,11 +318,8 @@ function loadLayer(index: number, keepView: boolean): void {
   state.mesh = null;
   state.meshKeepView = keepView;
   if (!keepView) {
-    // A single column is a profile along y.
-    state.profileAxis = surface.columns < 2 ? 'y' : 'x';
-    state.profileIndex = Math.floor(
-      (state.profileAxis === 'x' ? surface.rows : surface.columns) / 2,
-    );
+    state.profileAxis = startAxis(surface);
+    state.profileIndex = middleProfile(surface, state.profileAxis);
     markAxis();
   }
   if (view3d) view3d.setMesh(null);
@@ -372,48 +349,16 @@ function feed2d(keepView: boolean): void {
 
 // ------------------------------------------------------------------------------------------ profile
 
-function profileSeries(): {
-  values: Float32Array;
-  step: number;
-  count: number;
-  positions: Float32Array | null;
-} {
-  const s = state.surface as Surface;
-  const irregular = irregularProfile(s);
-  if (irregular) {
-    // The mean distance between the points stands for the step.
-    const { positions } = irregular;
-    const step =
-      ((positions[positions.length - 1] as number) - (positions[0] as number)) /
-        Math.max(positions.length - 1, 1) || 1;
-    return { values: s.z, step, count: 1, positions };
-  }
-  if (state.profileAxis === 'x') {
-    const row = Math.min(state.profileIndex, s.rows - 1);
-    return {
-      values: s.z.slice(row * s.columns, (row + 1) * s.columns),
-      step: s.stepX,
-      count: s.rows,
-      positions: null,
-    };
-  }
-  const column = Math.min(state.profileIndex, s.columns - 1);
-  const values = new Float32Array(s.rows);
-  for (let r = 0; r < s.rows; r++) values[r] = s.z[r * s.columns + column] as number;
-  return { values, step: s.stepY, count: s.columns, positions: null };
-}
-
 function updateProfile(): void {
   const s = state.surface;
   if (s?.kind !== 'grid' || (s.x !== null && !irregularProfile(s))) return;
   const plot = ensureProfile();
-  const { values, step, count, positions } = profileSeries();
-  plot.setSeries(
-    values,
-    step,
-    irregularProfile(s)?.axis ?? state.profileAxis,
-    positions,
+  const { values, step, count, positions } = profileSeries(
+    s,
+    state.profileAxis,
+    state.profileIndex,
   );
+  plot.setSeries(values, step, alongAxis(s, state.profileAxis), positions);
   const slider = $<HTMLInputElement>('profileSlider');
   slider.max = String(count);
   slider.value = String(state.profileIndex + 1);
@@ -423,19 +368,20 @@ function updateProfile(): void {
   // A profile has no columns to choose along y, and a single column no rows to choose along x.
   (
     $('profileDirection').querySelector('[data-axis="x"]') as HTMLButtonElement
-  ).disabled = s.columns < 2;
+  ).disabled = !canRun(s, 'x');
   (
     $('profileDirection').querySelector('[data-axis="y"]') as HTMLButtonElement
-  ).disabled = s.rows < 2;
+  ).disabled = !canRun(s, 'y');
   $<HTMLElement>('profileBar').dataset.noun = noun;
 }
 
 function profileText(index: number): string {
   if (index < 0 || !profile || !state.surface) return '';
-  const value = profile.valueAt(index);
-  const z = Number.isFinite(value) ? formatLength(value) : 'not measured';
-  const along = (irregularProfile(state.surface)?.axis ?? state.profileAxis) === 'x';
-  return `${along ? 'x' : 'y'}=${formatLength(profile.positionAt(index))}, z=${z}`;
+  return profileReadout(
+    alongAxis(state.surface, state.profileAxis),
+    profile.positionAt(index),
+    profile.valueAt(index),
+  );
 }
 
 /** Shows where the profile lies on the surface, for as long as the slider is used. */
@@ -470,9 +416,7 @@ for (const button of document.querySelectorAll<HTMLButtonElement>(
   button.addEventListener('click', () => {
     state.profileAxis = button.dataset.axis === 'y' ? 'y' : 'x';
     const s = state.surface as Surface;
-    state.profileIndex = Math.floor(
-      (state.profileAxis === 'x' ? s.rows : s.columns) / 2,
-    );
+    state.profileIndex = middleProfile(s, state.profileAxis);
     markAxis();
     updateProfile();
     showLocator();
@@ -587,26 +531,16 @@ for (const button of document.querySelectorAll<HTMLButtonElement>(
 }
 
 const zSlider = $<HTMLInputElement>('zSlider');
-const SLIDER_MAX = 1000;
-const logMin = Math.log10(Z_FACTOR_MIN);
-const logMax = Math.log10(Z_FACTOR_MAX);
-const sliderToFactor = (position: number): number =>
-  10 ** (logMin + (position / SLIDER_MAX) * (logMax - logMin));
-const factorToSlider = (factor: number): number =>
-  Math.round(((Math.log10(factor) - logMin) / (logMax - logMin)) * SLIDER_MAX);
 
 function setZFactor(factor: number): void {
-  state.zFactor = Math.min(Math.max(factor, Z_FACTOR_MIN), Z_FACTOR_MAX);
-  zSlider.value = String(factorToSlider(state.zFactor));
-  $('zOutput').textContent = `×${Number(state.zFactor.toPrecision(3))}`;
+  state.zFactor = clampFactor(factor);
+  zSlider.value = String(sliderFromFactor(state.zFactor));
+  $('zOutput').textContent = factorText(state.zFactor);
   view3d?.setZFactor(state.zFactor);
 }
 
 zSlider.addEventListener('input', () => {
-  // Close to true scale the slider snaps to 1, so that it is easy to return to.
-  let factor = sliderToFactor(Number(zSlider.value));
-  if (Math.abs(Math.log10(factor)) < 0.03) factor = 1;
-  setZFactor(factor);
+  setZFactor(factorFromSlider(Number(zSlider.value)));
 });
 $('zReset').addEventListener('click', () => {
   setZFactor(1);
@@ -650,7 +584,7 @@ $('layerNext').addEventListener('click', () => {
 function stepLayer(delta: number): void {
   const file = state.file;
   if (!file || file.layerCount < 2) return;
-  const next = (state.layer + delta + file.layerCount) % file.layerCount;
+  const next = nextLayer(state.layer, delta, file.layerCount);
   try {
     loadLayer(next, true);
   } catch (error) {
@@ -719,7 +653,7 @@ async function saveScreenshot(): Promise<void> {
   const blob = await screenshot(view, host);
   const link = document.createElement('a');
   link.href = URL.createObjectURL(blob);
-  link.download = `${state.file.name.replace(/\.[^.]+$/, '')}-${state.view}.png`;
+  link.download = screenshotName(state.file.name, state.view);
   link.click();
   setTimeout(() => {
     URL.revokeObjectURL(link.href);
@@ -747,17 +681,7 @@ function showReadout(text: string): void {
     return;
   }
   const { extent } = state;
-  const field = [];
-  if (extent) {
-    // A regular grid covers its points times the step; otherwise the span of the positions is used.
-    // The extent across a profile counts if the positions vary, as along a diagonal.
-    const spans = (axis: 'x' | 'y'): boolean => extent[axis][1] > extent[axis][0];
-    if (s.kind === 'cloud' || s.columns > 1 || (s.x && spans('x')))
-      field.push(s.x ? extent.x[1] - extent.x[0] : s.columns * s.stepX);
-    if (s.kind === 'cloud' || s.rows > 1 || (s.y && spans('y')))
-      field.push(s.y ? extent.y[1] - extent.y[0] : s.rows * s.stepY);
-  }
-  element.textContent = `FOV ${formatExtent(field)}, PV ${formatLength(stats.max - stats.min)}`;
+  element.textContent = extent ? statusText(s, stats, extent) : '';
 }
 
 // ------------------------------------------------------------------------------------------ opening files

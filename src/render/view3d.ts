@@ -8,12 +8,10 @@ import { Camera, columnMajor } from './camera';
 import { vertexPosition, type Mesh } from './mesh';
 import { pick } from './pick';
 import { formatLength } from '../units';
+import { clampFactor } from '../zscale';
 
 export type Tool = 'rotate' | 'pan' | 'zoom';
 export type RenderMode = 'surface' | 'wireframe' | 'points';
-
-export const Z_FACTOR_MIN = 0.01;
-export const Z_FACTOR_MAX = 10000;
 
 const ZOOM_STEP = 1.2;
 const POINT_SIZE = 3;
@@ -201,10 +199,7 @@ export class View3D {
   }
 
   setZFactor(factor: number): void {
-    this.zFactor = Math.min(
-      Math.max(Number.isFinite(factor) ? factor : 1, Z_FACTOR_MIN),
-      Z_FACTOR_MAX,
-    );
+    this.zFactor = clampFactor(factor);
     if (this.mesh) this.camera.setRadius(this.sceneRadius());
     this.requestRender();
   }
