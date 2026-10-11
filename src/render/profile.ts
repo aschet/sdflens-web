@@ -5,13 +5,13 @@
 /** Profile view: the height along one row or column of a grid. */
 
 import { drawAxes, type Box } from './axes';
+import { ProfileViewport } from './profileViewport';
 
 const LEFT = 48;
 const TOP = 8;
 const RIGHT = 14;
 const BOTTOM = 36;
 const ZOOM_STEP = 1.2;
-const MIN_POINTS = 3;
 const MARKER_RADIUS = 4.5;
 const CLICK_DISTANCE = 4;
 const LINE_COLOR = '#3f8fe0';
@@ -114,18 +114,6 @@ export function positionEnvelope(
   };
 }
 
-/** The first index whose position is not below ``target``, for positions in increasing order. */
-export function lowerBound(positions: ArrayLike<number>, target: number): number {
-  let lo = 0;
-  let hi = positions.length;
-  while (lo < hi) {
-    const mid = (lo + hi) >> 1;
-    if ((positions[mid] as number) < target) lo = mid + 1;
-    else hi = mid;
-  }
-  return lo;
-}
-
 interface Style {
   background: string;
   foreground: string;
@@ -143,8 +131,7 @@ export class ProfilePlot {
   /** The positions of the points of an irregular profile, in increasing order, or null for a regular one. */
   private positions: Float32Array | null = null;
   private axis = 'x';
-  private x0 = 0;
-  private span = 1;
+  private readonly view = new ProfileViewport();
   private hover = -1;
   private tool: 'pan' | 'zoom' = 'pan';
   private style: Style = {
@@ -224,22 +211,18 @@ export class ProfilePlot {
     axis: string,
     positions: Float32Array | null = null,
   ): void {
-    const same =
-      values.length === this.values.length &&
-      step === this.step &&
-      (positions === null) === (this.positions === null);
     this.values = values;
     this.step = step;
     this.positions = positions;
     this.axis = axis;
     this.hover = -1;
-    if (same) this.requestRender();
-    else this.home();
+    this.view.setSeries(values.length, step, positions);
+    this.requestRender();
   }
 
   /** The position along the profile of a point. */
   positionAt(index: number): number {
-    return this.positions ? (this.positions[index] as number) : index * this.step;
+    return this.view.positionAt(index);
   }
 
   valueAt(index: number): number {
@@ -247,9 +230,7 @@ export class ProfilePlot {
   }
 
   home(): void {
-    const [low, high] = this.full();
-    this.x0 = low;
-    this.span = high - low;
+    this.view.home();
     this.requestRender();
   }
 
@@ -277,16 +258,6 @@ export class ProfilePlot {
     this.canvas.remove();
   }
 
-  private full(): [number, number] {
-    const count = this.values.length;
-    if (this.positions && count > 1) {
-      const first = this.positions[0] as number;
-      const last = this.positions[count - 1] as number;
-      return [first - 0.5 * this.step, last + 0.5 * this.step];
-    }
-    return [-0.5 * this.step, (Math.max(count, 1) - 0.5) * this.step];
-  }
-
   private plotWidth(): number {
     return Math.max(this.width - LEFT - RIGHT, 1);
   }
@@ -296,17 +267,7 @@ export class ProfilePlot {
   }
 
   private zoomAt(factor: number, px: number): void {
-    const [low, high] = this.full();
-    const anchor = this.x0 + (px / this.plotWidth()) * this.span;
-    const span = Math.min(
-      Math.max(this.span / factor, Math.min(MIN_POINTS * this.step, high - low)),
-      high - low,
-    );
-    this.x0 = Math.min(
-      Math.max(anchor - (px / this.plotWidth()) * span, low),
-      high - span,
-    );
-    this.span = span;
+    this.view.zoomAt(factor, px);
     this.requestRender();
   }
 
@@ -317,6 +278,7 @@ export class ProfilePlot {
     this.height = Math.max(Math.round(rect.height), 1);
     this.canvas.width = Math.round(this.width * this.ratio);
     this.canvas.height = Math.round(this.height * this.ratio);
+    this.view.setPlotWidth(this.plotWidth());
     this.requestRender();
   }
 
@@ -337,18 +299,9 @@ export class ProfilePlot {
     const plotHeight = this.plotHeight();
     if (this.values.length === 0 || plotWidth < 10 || plotHeight < 10) return;
 
-    const xLo = this.x0;
-    const xHi = this.x0 + this.span;
-    const positions = this.positions;
-    const first = xLo / this.step;
-    const last = xHi / this.step;
-    // The indices of the visible points; a line is continued to the neighbours of the first and the last.
-    const start = positions
-      ? Math.max(0, lowerBound(positions, xLo) - 1)
-      : Math.max(0, Math.ceil(first));
-    const stop = positions
-      ? Math.min(this.values.length, lowerBound(positions, xHi) + 1)
-      : Math.min(this.values.length, Math.floor(last) + 1);
+    const xLo = this.view.x0;
+    const xHi = xLo + this.view.span;
+    const { start, stop, perPixel } = this.view.visible();
     const [zLo, zHi] = zRange(this.values.subarray(start, stop));
 
     context.save();
@@ -360,14 +313,22 @@ export class ProfilePlot {
     context.lineWidth = 1;
     const bottom = TOP + plotHeight;
     const factor = plotHeight / (zHi - zLo);
-    if ((positions ? stop - start : last - first) / plotWidth >= 1) {
-      this.drawEnvelope(context, first, last, zLo, factor, bottom, start, stop);
+    if (perPixel >= 1) {
+      this.drawEnvelope(
+        context,
+        xLo / this.step,
+        xHi / this.step,
+        zLo,
+        factor,
+        bottom,
+        start,
+        stop,
+      );
     } else {
       this.drawPoints(context, start, stop, zLo, factor, bottom);
     }
     if (this.hover >= 0 && Number.isFinite(this.values[this.hover])) {
-      const x =
-        LEFT + ((this.positionAt(this.hover) - this.x0) / this.span) * plotWidth;
+      const x = LEFT + this.view.pixelAt(this.positionAt(this.hover));
       const y = bottom - ((this.values[this.hover] as number) - zLo) * factor;
       context.beginPath();
       context.arc(x, y, MARKER_RADIUS, 0, Math.PI * 2);
@@ -383,9 +344,9 @@ export class ProfilePlot {
       context,
       box,
       {
-        lo: Math.max(xLo, this.full()[0]),
-        hi: Math.min(xHi, this.full()[1]),
-        toScreen: (v) => LEFT + ((v - this.x0) / this.span) * plotWidth,
+        lo: Math.max(xLo, this.view.full()[0]),
+        hi: Math.min(xHi, this.view.full()[1]),
+        toScreen: (v) => LEFT + this.view.pixelAt(v),
         title: this.axis,
       },
       { lo: zLo, hi: zHi, toScreen: (v) => bottom - (v - zLo) * factor, title: 'z' },
@@ -411,8 +372,8 @@ export class ProfilePlot {
           this.positions,
           start,
           stop,
-          this.x0,
-          this.x0 + this.span,
+          this.view.x0,
+          this.view.x0 + this.view.span,
           plotWidth,
         )
       : envelope(this.values, first, last, plotWidth);
@@ -436,7 +397,6 @@ export class ProfilePlot {
     factor: number,
     bottom: number,
   ): void {
-    const plotWidth = this.plotWidth();
     context.beginPath();
     let open = false;
     for (let i = start; i < stop; i++) {
@@ -445,7 +405,7 @@ export class ProfilePlot {
         open = false;
         continue;
       }
-      const x = LEFT + ((this.positionAt(i) - this.x0) / this.span) * plotWidth;
+      const x = LEFT + this.view.pixelAt(this.positionAt(i));
       const y = bottom - (value - zLo) * factor;
       if (open) context.lineTo(x, y);
       else context.moveTo(x, y);
@@ -461,22 +421,7 @@ export class ProfilePlot {
       y >= TOP &&
       y <= TOP + this.plotHeight();
     if (!inside) return -1;
-    const position = this.x0 + ((x - LEFT) / this.plotWidth()) * this.span;
-    if (this.positions) {
-      // The nearest point of an irregular profile.
-      const above = lowerBound(this.positions, position);
-      const below = above - 1;
-      const index =
-        above >= this.values.length ||
-        (below >= 0 &&
-          position - (this.positions[below] as number) <=
-            (this.positions[above] as number) - position)
-          ? below
-          : above;
-      return index >= 0 && index < this.values.length ? index : -1;
-    }
-    const index = Math.round(position / this.step);
-    return index >= 0 && index < this.values.length ? index : -1;
+    return this.view.indexAt(this.view.positionAtPixel(x - LEFT));
   }
 
   private setHover(index: number): void {
@@ -544,9 +489,7 @@ export class ProfilePlot {
       this.zoomAt(Math.exp(-dy * 0.01), x - LEFT);
       return;
     }
-    const [low, high] = this.full();
-    const shift = (dx / this.plotWidth()) * this.span;
-    this.x0 = Math.min(Math.max(this.x0 - shift, low), high - this.span);
+    this.view.panBy(dx);
     this.requestRender();
   }
 

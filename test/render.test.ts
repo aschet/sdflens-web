@@ -7,7 +7,8 @@ import type { Surface } from '../src/model';
 import { Camera } from '../src/render/camera';
 import { buildMesh, vertexPosition } from '../src/render/mesh';
 import { pick, pickFace, pickVertex, project } from '../src/render/pick';
-import { envelope, connect, lowerBound, positionEnvelope } from '../src/render/profile';
+import { envelope, connect, positionEnvelope } from '../src/render/profile';
+import { lowerBound } from '../src/render/profileViewport';
 import { blockSize, reduce } from '../src/render/view2d';
 
 function grid(
