@@ -106,13 +106,12 @@ export function describeFile(d: Description): InfoSection[] {
       ["Creation", isPlaceholder(d.creation) ? "-" : (d.creation as string)],
     ],
   };
-  const data: InfoSection = { title: "Data", rows: [["Size", d.size]] };
+  // The types of the stored axes, in the order x, y, z.
+  const types = [d.types.x, d.types.y, d.types.z].filter((type): type is string => type !== undefined);
+  const data: InfoSection = { title: "Data", rows: [["Type", types.join(", ")], ["Size", d.size]] };
   if (d.step) data.rows.push(["Step", d.step]);
   if (d.positions) data.rows.push(["Positions", d.positions]);
   const given = (value: string | undefined): string => (isPlaceholder(value) ? "-" : (value as string));
-  // The types of the stored axes, in the order x, y, z.
-  const types = [d.types.x, d.types.y, d.types.z].filter((type): type is string => type !== undefined);
-  data.rows.push(["Type", types.join(", ")]);
   if (d.resolution) data.rows.push(["Height resolution", d.resolution]);
   if (d.placement) data.rows.push(["Placement", d.placement]);
   const instrument: InfoSection = { title: "Instrument", rows: INSTRUMENT_FIELDS.map((field): [string, string] => [field, given(d.instrument[field])]) };
