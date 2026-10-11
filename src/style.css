@@ -770,17 +770,42 @@ input[type="range"] {
     padding-bottom: 6px;
   }
 
+  /* The program icon joins the other buttons in a row of their own, under the name of the file. */
+  .brand,
+  .actions {
+    display: contents;
+  }
+
   .brand span {
     display: none;
   }
 
-  .file-name {
-    order: 1;
-    flex: 1 1 40%;
+  .bar {
+    column-gap: 6px;
   }
 
-  .actions {
+  .file-name {
+    order: 1;
+    flex: 1 1 100%;
+  }
+
+  .brand .button,
+  .actions .button {
     order: 2;
+  }
+
+  #app[data-state="empty"] .file-name {
+    order: 0;
+    flex: 1 1 0;
+  }
+
+  #app[data-state="empty"] .brand .button,
+  #app[data-state="empty"] .actions .button {
+    order: 0;
+  }
+
+  #app[data-state="empty"] #openButton {
+    margin-left: auto;
   }
 
   .views {
@@ -856,7 +881,8 @@ input[type="range"] {
   }
 
   .file-name,
-  .actions,
+  .brand .button,
+  .actions .button,
   .views {
     order: 0;
   }
