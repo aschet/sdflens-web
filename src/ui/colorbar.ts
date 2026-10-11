@@ -6,10 +6,10 @@
 
 import { formatTick, niceTicks, unitFor } from "../units";
 
-const BAR_LEFT = 12;
-const BAR_WIDTH = 16;
-const TOP = 28;
-const BOTTOM = 12;
+const BAR_LEFT = 9;
+const BAR_WIDTH = 14;
+const TOP = 26;
+const BOTTOM = 10;
 
 export class Colorbar {
   private lut: Uint8Array | null = null;
@@ -65,16 +65,16 @@ export class Colorbar {
     context.fillStyle = this.foreground;
     context.font = "12px system-ui, sans-serif";
     context.textAlign = "left";
-    context.fillText(symbol, BAR_LEFT, 18);
+    context.fillText(symbol, BAR_LEFT, 17);
     if (hi > lo) {
       for (const tick of niceTicks(lo, hi, Math.max(2, Math.floor(barHeight / 40)))) {
         const y = Math.round(TOP + ((hi - tick) / (hi - lo)) * barHeight) + 0.5;
         const x = BAR_LEFT + BAR_WIDTH;
         context.beginPath();
         context.moveTo(x, y);
-        context.lineTo(x + 4, y);
+        context.lineTo(x + 3, y);
         context.stroke();
-        context.fillText(formatTick(tick, factor), x + 7, y + 4);
+        context.fillText(formatTick(tick, factor), x + 6, y + 4);
       }
     }
   }

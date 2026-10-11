@@ -332,7 +332,7 @@ function profileText(index: number): string {
   const { step } = profileSeries();
   const z = Number.isFinite(value) ? formatLength(value) : "not measured";
   const along = state.profileAxis === "x";
-  return `${along ? "x" : "y"} = ${formatLength(index * step)}, z = ${z}`;
+  return `${along ? "x" : "y"}=${formatLength(index * step)}, z=${z}`;
 }
 
 function markAxis(): void {

@@ -477,7 +477,7 @@ export class View3D {
       return;
     }
     const [px, py, pz] = vertexPosition(mesh, this.picked);
-    this.onPick(`x = ${formatLength(px)}, y = ${formatLength(py)}, z = ${formatLength(pz)}`);
+    this.onPick(`x=${formatLength(px)}, y=${formatLength(py)}, z=${formatLength(pz)}`);
   }
 }
 

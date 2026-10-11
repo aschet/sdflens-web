@@ -360,7 +360,7 @@ export class View2D {
     const value = s.z[row * s.columns + column] as number;
     const z = Number.isFinite(value) ? formatLength(value) : "not measured";
     return {
-      text: `x = ${formatLength(column * s.stepX)}, y = ${formatLength(row * s.stepY)}, z = ${z}`,
+      text: `x=${formatLength(column * s.stepX)}, y=${formatLength(row * s.stepY)}, z=${z}`,
       column,
       row,
     };
