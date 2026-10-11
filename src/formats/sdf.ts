@@ -352,17 +352,11 @@ function latin1(bytes: Uint8Array): string {
   return text;
 }
 
-const REVISIONS: Record<Dialect, string> = {
-  "ISO-1.0": "ISO 25178-71, version 1.0",
-  "ISO-2.0": "ISO 25178-71:2026, version 2.0",
-  "BCR-1.0": "BCR (EUR 15178 EN), version 1.0",
-};
-
 function describe(header: Header): InfoSection[] {
   const feature = featureOf(false, header.rows);
   return describeFile({
     format: `SDF, ${header.binary ? "binary" : "ASCII"}`,
-    revision: REVISIONS[header.dialect],
+    revision: header.dialect,
     feature,
     layers: 1,
     size: sizeText(feature, header.columns, header.rows),

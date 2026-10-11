@@ -281,11 +281,6 @@ interface Context {
   binary: boolean;
 }
 
-/** The revision of the standard that the Revision element names, as x3pio resolves it. */
-function revisionName(text: string | undefined): string {
-  return /DAM1|Amd/i.test(text ?? "") ? "ISO 25178-72:2017/Amd 1:2020" : "ISO 25178-72:2017";
-}
-
 function axisType(axis: Axis): string {
   return `${TYPE_NAMES[axis.type]}${axis.increment === 1 ? "" : `, factor ${g(axis.increment)}`}`;
 }
@@ -310,7 +305,7 @@ function describe(c: Context): InfoSection[] {
 
   return describeFile({
     format: `x3p, ${c.binary ? "binary" : "XML"}`,
-    revision: revisionName(text(child(c.record1, "Revision"))),
+    revision: text(child(c.record1, "Revision")) ?? "not set",
     feature,
     layers: c.layers,
     size: sizeText(feature, c.columns, c.rows),

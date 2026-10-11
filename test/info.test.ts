@@ -25,11 +25,12 @@ describe("file information", () => {
   });
 
   it("names the format with its encoding and the revision", () => {
-    expect(info("iso2_surface_binary.sdf").File).toMatchObject({ Format: "SDF, binary", Revision: "ISO 25178-71:2026, version 2.0" });
+    expect(info("iso2_surface_binary.sdf").File).toMatchObject({ Format: "SDF, binary", Revision: "ISO-2.0" });
     expect(info("iso2_surface_ascii.sdf").File).toMatchObject({ Format: "SDF, ASCII" });
-    expect(info("iso1_surface_binary.sdf").File).toMatchObject({ Revision: "ISO 25178-71, version 1.0" });
-    expect(info("bcr1_surface_binary.sdf").File).toMatchObject({ Revision: "BCR (EUR 15178 EN), version 1.0" });
-    expect(info("x3pio_surface_binary.x3p").File).toMatchObject({ Format: "x3p, binary", Revision: "ISO 25178-72:2017/Amd 1:2020" });
+    expect(info("iso1_surface_binary.sdf").File).toMatchObject({ Revision: "ISO-1.0" });
+    expect(info("bcr1_surface_binary.sdf").File).toMatchObject({ Revision: "BCR-1.0" });
+    // The revision is the identifier that the file states.
+    expect(info("x3pio_surface_binary.x3p").File).toMatchObject({ Format: "x3p, binary", Revision: "ISO25178-72:2017/DAM1" });
     expect(info("x3pio_surface_xml.x3p").File).toMatchObject({ Format: "x3p, XML" });
   });
 
