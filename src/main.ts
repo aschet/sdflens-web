@@ -375,7 +375,7 @@ function renderInfo(): void {
       ["Not measured", stats.invalid.toLocaleString("en")],
     ],
   };
-  for (const section of [layer, ...file.info]) {
+  for (const section of [...file.info, layer]) {
     const heading = document.createElement("h3");
     heading.textContent = section.title;
     const list = document.createElement("dl");
