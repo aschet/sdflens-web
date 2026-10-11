@@ -435,7 +435,8 @@ export class View2D {
     const press = this.press;
     if (this.pointers.size === 0) this.press = null;
     if (cancelled || !pointer || !press || press.moved || pointer.button !== 0) return;
-    // A tap or click marks the point, which is how a touch screen reads a value.
+    // A tap marks the point, which is how a touch screen reads a value; a mouse reads it by hovering.
+    if (pointer.type !== "touch") return;
     const hit = this.describe(press.x, press.y);
     this.marker = hit ? { column: hit.column, row: hit.row } : null;
     this.onHover(hit ? hit.text : "");
