@@ -47,7 +47,8 @@ describe("file information", () => {
     expect(surface.File).not.toHaveProperty("Layers");
     expect(info("x3pio_surface_layers_binary.x3p").File).not.toHaveProperty("Layers");
     expect(info("iso1_profile_binary.sdf").Data).toMatchObject({ Size: "128 points", Step: "2 µm" });
-    expect(info("x3pio_surface_irregular_binary.x3p").Data).toMatchObject({ Positions: "stored for every point" });
+    expect(info("x3pio_surface_irregular_binary.x3p").Data).toMatchObject({ Step: "irregular" });
+    expect(info("x3pio_point_cloud_binary.x3p").Data).toMatchObject({ Step: "irregular" });
   });
 
   it("names the data type of each axis in one row, the same way for SDF and x3p", () => {

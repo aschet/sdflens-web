@@ -18,10 +18,8 @@ export interface Description {
   creator?: string;
   creation?: string;
   size: string;
-  /** The distance between points of a regular grid. */
-  step?: string;
-  /** Says how the points of an irregular grid or of a cloud are positioned. */
-  positions?: string;
+  /** The distance between the points of a regular grid; "irregular" for an irregular grid and a cloud. */
+  step: string;
   /** The data type in which each axis is stored, if it is stored; the names are the same for every format. */
   types: { x?: string; y?: string; z: string };
   resolution?: string;
@@ -109,8 +107,7 @@ export function describeFile(d: Description): InfoSection[] {
   // The types of the stored axes, in the order x, y, z.
   const types = [d.types.x, d.types.y, d.types.z].filter((type): type is string => type !== undefined);
   const data: InfoSection = { title: "Data", rows: [["Type", types.join(", ")], ["Size", d.size]] };
-  if (d.step) data.rows.push(["Step", d.step]);
-  if (d.positions) data.rows.push(["Positions", d.positions]);
+  data.rows.push(["Step", d.step]);
   const given = (value: string | undefined): string => (isPlaceholder(value) ? "-" : (value as string));
   if (d.resolution) data.rows.push(["Height resolution", d.resolution]);
   if (d.placement) data.rows.push(["Placement", d.placement]);
