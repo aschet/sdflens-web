@@ -195,12 +195,13 @@ function updateTools(): void {
   const effective = effectiveTool();
   for (const button of document.querySelectorAll<HTMLButtonElement>(".tool[data-tool]")) {
     const tool = button.dataset.tool as Tool;
-    // The profile is panned by dragging; rotating is for the 3D view only.
-    button.hidden = tool === "rotate" ? state.view !== "3d" : state.view === "profile";
+    // Rotating is for the 3D view only.
+    button.hidden = tool === "rotate" && state.view !== "3d";
     button.setAttribute("aria-pressed", String(tool === effective));
   }
   view3d?.setTool(state.tool);
   view2d?.setTool(effective);
+  profile?.setTool(effective === "zoom" ? "zoom" : "pan");
 }
 
 function ensureMesh(): void {

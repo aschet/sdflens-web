@@ -84,6 +84,7 @@ export class ProfilePlot {
   private x0 = 0;
   private span = 1;
   private hover = -1;
+  private tool: "pan" | "zoom" = "pan";
   private style: Style = { background: "#1e1f22", foreground: "#e6e6e6", muted: "#9a9a9a" };
   private width = 1;
   private height = 1;
@@ -105,9 +106,15 @@ export class ProfilePlot {
       if (event.pointerType === "mouse" && this.pointers.size === 0) this.setHover(-1);
     });
     this.canvas.addEventListener("wheel", (event) => this.onWheel(event), { passive: false });
+    this.canvas.addEventListener("contextmenu", (event) => event.preventDefault());
     this.observer = new ResizeObserver(() => this.resize());
     this.observer.observe(host);
     this.resize();
+  }
+
+  /** The action of the left mouse button: dragging pans, or zooms about the cursor. */
+  setTool(tool: "pan" | "zoom"): void {
+    this.tool = tool;
   }
 
   setStyle(style: Style): void {
@@ -330,6 +337,7 @@ export class ProfilePlot {
       return;
     }
     const dx = x - pointer.x;
+    const dy = y - pointer.y;
     pointer.x = x;
     pointer.y = y;
     if (this.pointers.size >= 2) {
@@ -340,6 +348,15 @@ export class ProfilePlot {
     }
     if (this.press && Math.hypot(x - this.press.x, y - this.press.y) > CLICK_DISTANCE) this.press.moved = true;
     if (this.press?.moved) this.setHover(-1);
+    let tool = this.tool;
+    if (pointer.type === "mouse") {
+      if (pointer.button === 1) tool = "pan";
+      else if (pointer.button === 2) tool = "zoom";
+    }
+    if (tool === "zoom") {
+      this.zoomAt(Math.exp(-dy * 0.01), x - LEFT);
+      return;
+    }
     const [low, high] = this.full();
     const shift = (dx / this.plotWidth()) * this.span;
     this.x0 = Math.min(Math.max(this.x0 - shift, low), high - this.span);

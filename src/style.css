@@ -283,6 +283,11 @@ input:focus-visible,
   --rr: 132px;
 }
 
+/* In the 3D view the tools float over the picture; the plots keep a margin for their axes. */
+#app[data-view="3d"] .stage {
+  --rl: 0px;
+}
+
 #app[data-view="profile"] .stage {
   --rt: 56px;
 }
