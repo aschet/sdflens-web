@@ -314,6 +314,5 @@ function describe(c: Context): InfoSection[] {
     },
     creator: value("Creator"),
     creation: formatDate(value("Date")),
-    source: [["Comment", value("Comment")]],
   });
 }

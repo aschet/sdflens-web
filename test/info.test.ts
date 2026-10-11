@@ -20,8 +20,7 @@ describe("file information", () => {
   it("has the same sections for SDF and x3p, without the trailer and the metadata block", () => {
     for (const name of ["iso2_surface_binary.sdf", "x3pio_surface_binary.x3p", "bcr1_profile_ascii.sdf", "x3pio_point_cloud_binary.x3p"]) {
       const titles = Object.keys(info(name));
-      expect(titles.slice(0, 4)).toEqual(["File", "Data", "Instrument", "Probing"]);
-      expect(titles.every((title) => ["File", "Data", "Instrument", "Probing", "Source"].includes(title))).toBe(true);
+      expect(titles).toEqual(["File", "Data", "Instrument", "Probing"]);
     }
   });
 
@@ -74,10 +73,8 @@ describe("file information", () => {
     // An SDF file does not name a creator, which shows as a dash.
     expect(sdf.File).toMatchObject({ Creator: "-" });
     expect(sdf.File?.Creation).toBe(x3p.File?.Creation);
-    expect(x3p.Source).toMatchObject({ Comment: expect.any(String) });
-    // An SDF file has no comment, so it has no such section, and the modification date is not shown.
-    expect(sdf).not.toHaveProperty("Source");
-    expect(JSON.stringify(sdf)).not.toContain("Modified");
+    // The modification date and the comment are not shown.
+    expect(JSON.stringify([sdf, x3p])).not.toMatch(/Modified|Comment|Source/);
   });
 
   it("writes dates in the locale and the time zone of the system, converting a date that has a zone", () => {

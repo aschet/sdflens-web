@@ -360,6 +360,5 @@ function describe(header: Header): InfoSection[] {
     creation: formatDate(header.created),
     instrument: { Manufacturer: header.manufacturer },
     probing: {},
-    source: [],
   });
 }

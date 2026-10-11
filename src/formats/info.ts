@@ -27,8 +27,6 @@ export interface Description {
   /** The fields of the instrument and of the probing system; those that a format does not have, or that are not given, show as "-". */
   instrument: Partial<Record<InstrumentField, string>>;
   probing: Partial<Record<ProbingField, string>>;
-  /** Where the data comes from; the entries without a value are left out. */
-  source: [string, string | undefined][];
 }
 
 export const INSTRUMENT_FIELDS = ["Manufacturer", "Model", "Serial", "Version", "Calibration"] as const;
@@ -114,8 +112,5 @@ export function describeFile(d: Description): InfoSection[] {
   const given = (value: string | undefined): string => (isPlaceholder(value) ? "-" : (value as string));
   const instrument: InfoSection = { title: "Instrument", rows: INSTRUMENT_FIELDS.map((field): [string, string] => [field, given(d.instrument[field])]) };
   const probing: InfoSection = { title: "Probing", rows: PROBING_FIELDS.map((field): [string, string] => [field, given(d.probing[field])]) };
-  const sections = [file, data, instrument, probing];
-  const source = d.source.filter((row): row is [string, string] => !isPlaceholder(row[1]));
-  if (source.length) sections.push({ title: "Source", rows: source });
-  return sections;
+  return [file, data, instrument, probing];
 }
