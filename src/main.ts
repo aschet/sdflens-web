@@ -44,10 +44,10 @@ const colorbar = new Colorbar($<HTMLCanvasElement>("colorbar"));
 
 // ------------------------------------------------------------------------------------------------ theme
 
-function cssColors(): { background: string; foreground: string; muted: string } {
+function cssColors(): { background: string; foreground: string; muted: string; surface: string; border: string } {
   const style = getComputedStyle(document.documentElement);
   const read = (name: string): string => style.getPropertyValue(name).trim();
-  return { background: read("--stage"), foreground: read("--text"), muted: read("--muted") };
+  return { background: read("--stage"), foreground: read("--text"), muted: read("--muted"), surface: read("--surface"), border: read("--border") };
 }
 
 function applyColors(): void {
@@ -492,10 +492,45 @@ function stepLayer(delta: number): void {
   }
 }
 
+/** The picture of the view, with the color bar: over the picture in 3D, next to it in 2D. */
+async function screenshot(view: { snapshot(): Promise<Blob> }, host: HTMLElement): Promise<Blob> {
+  const picture = await view.snapshot();
+  const bar = $("colorbarBox");
+  if (bar.hidden !== false) return picture;
+  const image = await createImageBitmap(picture);
+  const hostRect = host.getBoundingClientRect();
+  const barRect = bar.getBoundingClientRect();
+  const ratio = image.width / hostRect.width;
+  const left = Math.min(hostRect.left, barRect.left);
+  const top = Math.min(hostRect.top, barRect.top);
+  const width = Math.max(hostRect.right, barRect.right) - left;
+  const height = Math.max(hostRect.bottom, barRect.bottom) - top;
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.round(width * ratio);
+  canvas.height = Math.round(height * ratio);
+  const context = canvas.getContext("2d") as CanvasRenderingContext2D;
+  const colors = cssColors();
+  context.fillStyle = colors.background;
+  context.fillRect(0, 0, canvas.width, canvas.height);
+  context.drawImage(image, (hostRect.left - left) * ratio, (hostRect.top - top) * ratio);
+  const x = (barRect.left - left) * ratio;
+  const y = (barRect.top - top) * ratio;
+  context.beginPath();
+  context.roundRect(x, y, barRect.width * ratio, barRect.height * ratio, 10 * ratio);
+  context.fillStyle = colors.surface;
+  context.fill();
+  context.strokeStyle = colors.border;
+  context.lineWidth = ratio;
+  context.stroke();
+  context.drawImage($<HTMLCanvasElement>("colorbar"), x, y, barRect.width * ratio, barRect.height * ratio);
+  return new Promise((resolve, reject) => canvas.toBlob((blob) => (blob ? resolve(blob) : reject(new Error("No image"))), "image/png"));
+}
+
 $("shotButton").addEventListener("click", async () => {
   const view = activeView();
   if (!view || !state.file) return;
-  const blob = await view.snapshot();
+  const host = $(state.view === "3d" ? "view3d" : state.view === "2d" ? "view2d" : "viewProfile");
+  const blob = await screenshot(view, host);
   const link = document.createElement("a");
   link.href = URL.createObjectURL(blob);
   link.download = `${state.file.name.replace(/\.[^.]+$/, "")}-${state.view}.png`;
