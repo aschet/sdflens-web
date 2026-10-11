@@ -64,3 +64,21 @@ export function statistics(surface: Surface): Stats {
   }
   return { min, max, measured, invalid: z.length - measured };
 }
+
+/** The lateral extent of the measured points as [lo, hi] along x and y. */
+export function lateralRange(surface: Surface): { x: [number, number]; y: [number, number] } {
+  const range = (values: Float32Array | null, count: number, step: number): [number, number] => {
+    if (!values) return [0, (count - 1) * step];
+    let lo = Infinity;
+    let hi = -Infinity;
+    for (let i = 0; i < values.length; i++) {
+      const value = values[i] as number;
+      if (value < lo) lo = value;
+      if (value > hi) hi = value;
+    }
+    return [lo, hi];
+  };
+  const x = range(surface.x, surface.columns, surface.stepX);
+  const y = range(surface.y, surface.rows, surface.stepY);
+  return { x, y };
+}

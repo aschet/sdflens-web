@@ -35,6 +35,12 @@ export function formatLength(value: number, digits = 4): string {
   return `${significant(value / factor, digits)} ${symbol}`;
 }
 
+/** Formats an interval of lengths in meters in one common unit, as in "-1.2…1.2 µm". */
+export function formatRange(lo: number, hi: number, digits = 4): string {
+  const [factor, symbol] = unitFor(Math.max(Math.abs(lo), Math.abs(hi)));
+  return `${significant(lo / factor, digits)}…${significant(hi / factor, digits)} ${symbol}`;
+}
+
 /** Formats ``value`` divided by the unit ``factor`` without floating point noise. */
 export function formatTick(value: number, factor: number): string {
   return String(Number((value / factor).toPrecision(6)));

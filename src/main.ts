@@ -5,14 +5,14 @@
 import "./style.css";
 import { buildLut, colormapNames, DEFAULT_COLORMAP } from "./colormap";
 import { readFile } from "./formats";
-import { FormatError, statistics, type InfoSection, type Stats, type Surface, type SurfaceFile } from "./model";
+import { FormatError, lateralRange, statistics, type InfoSection, type Stats, type Surface, type SurfaceFile } from "./model";
 import { buildMesh, type Mesh } from "./render/mesh";
 import { ProfilePlot } from "./render/profile";
 import { View2D } from "./render/view2d";
 import { View3D, Z_FACTOR_MAX, Z_FACTOR_MIN, type RenderMode, type Tool } from "./render/view3d";
 import { SAMPLES } from "./samples";
 import { Colorbar } from "./ui/colorbar";
-import { formatLength } from "./units";
+import { formatLength, formatRange } from "./units";
 
 type ViewName = "3d" | "2d" | "profile";
 
@@ -24,6 +24,7 @@ const state = {
   layer: 0,
   surface: null as Surface | null,
   stats: null as Stats | null,
+  extent: null as ReturnType<typeof lateralRange> | null,
   mesh: null as Mesh | null,
   view: "3d" as ViewName,
   colormap: DEFAULT_COLORMAP,
@@ -264,6 +265,7 @@ function loadLayer(index: number, keepView: boolean): void {
   state.layer = index;
   state.surface = surface;
   state.stats = stats;
+  state.extent = lateralRange(surface);
   state.mesh = null;
   state.meshKeepView = keepView;
   if (!keepView) {
@@ -552,8 +554,14 @@ function showReadout(text: string): void {
     element.textContent = "";
     return;
   }
-  const size = s.kind === "cloud" ? `${s.columns.toLocaleString("en")} points` : s.rows === 1 ? `${s.columns.toLocaleString("en")} points` : `${s.columns.toLocaleString("en")} × ${s.rows.toLocaleString("en")} points`;
-  element.textContent = size;
+  const { extent } = state;
+  const parts = [];
+  if (extent) {
+    parts.push(`x=${formatRange(...extent.x)}`);
+    if (s.kind === "cloud" || s.rows > 1) parts.push(`y=${formatRange(...extent.y)}`);
+  }
+  parts.push(`z=${formatRange(stats.min, stats.max)}`);
+  element.textContent = parts.join(", ");
 }
 
 // ------------------------------------------------------------------------------------------ opening files
