@@ -10,6 +10,9 @@ import { formatLength } from "../units";
 
 const HIDE_DELAY = 1200;
 const LINE = "#ff9a1f";
+const MAX_ELONGATION = 4;
+/** The width that the caption needs, so that the card does not change its width while the caption changes. */
+const CAPTION_WIDTH = 76;
 
 export interface Placement {
   surface: Surface;
@@ -39,11 +42,10 @@ export class Locator {
     const ratio = window.devicePixelRatio || 1;
     const narrow = window.matchMedia("(max-width: 760px)").matches;
     const [boxWidth, boxHeight] = narrow ? [112, 84] : [160, 120];
-    const physicalWidth = s.columns * s.stepX;
-    const physicalHeight = s.rows * s.stepY;
-    const fit = Math.min(boxWidth / physicalWidth, boxHeight / physicalHeight);
-    const cssWidth = Math.max(Math.round(physicalWidth * fit), 1);
-    const cssHeight = Math.max(Math.round(physicalHeight * fit), 1);
+    // A very long surface is shown less elongated, so that the map stays big enough to show the line.
+    const aspect = Math.min(Math.max((s.columns * s.stepX) / (s.rows * s.stepY), 1 / MAX_ELONGATION), MAX_ELONGATION);
+    const cssWidth = Math.max(Math.round(Math.min(boxWidth, boxHeight * aspect)), 1);
+    const cssHeight = Math.max(Math.round(cssWidth / aspect), 1);
     const width = Math.round(cssWidth * ratio);
     const height = Math.round(cssHeight * ratio);
 
@@ -52,6 +54,7 @@ export class Locator {
       this.cache = { surface: s, key, width, height, image: this.render(p, width, height) };
     }
 
+    this.element.style.width = `${Math.max(cssWidth, CAPTION_WIDTH) + 14}px`;
     this.canvas.style.width = `${cssWidth}px`;
     this.canvas.style.height = `${cssHeight}px`;
     this.canvas.width = width;
