@@ -24,6 +24,34 @@ export interface Placement {
   index: number;
 }
 
+/** The size of the map in CSS pixels. A very long surface is shown less elongated, so that the line can be seen. */
+export function mapSize(
+  surface: Pick<Surface, 'columns' | 'rows' | 'stepX' | 'stepY'>,
+  narrow: boolean,
+): { width: number; height: number } {
+  const [boxWidth, boxHeight] = narrow ? [112, 84] : [160, 120];
+  const aspect = Math.min(
+    Math.max(
+      (surface.columns * surface.stepX) / (surface.rows * surface.stepY),
+      1 / MAX_ELONGATION,
+    ),
+    MAX_ELONGATION,
+  );
+  const width = Math.max(Math.round(Math.min(boxWidth, boxHeight * aspect)), 1);
+  return { width, height: Math.max(Math.round(width / aspect), 1) };
+}
+
+/** The caption of the map: where the profile lies, along y for a row and along x for a column. */
+export function captionText(
+  surface: Pick<Surface, 'stepX' | 'stepY'>,
+  axis: 'x' | 'y',
+  index: number,
+): string {
+  return axis === 'x'
+    ? `y=${formatLength(index * surface.stepY)}`
+    : `x=${formatLength(index * surface.stepX)}`;
+}
+
 export class Locator {
   private readonly canvas = document.createElement('canvas');
   private readonly caption = document.createElement('span');
@@ -50,14 +78,7 @@ export class Locator {
     if (s.rows < 2 || s.columns < 2) return;
     const ratio = window.devicePixelRatio || 1;
     const narrow = window.matchMedia('(max-width: 760px)').matches;
-    const [boxWidth, boxHeight] = narrow ? [112, 84] : [160, 120];
-    // A very long surface is shown less elongated, so that the map stays big enough to show the line.
-    const aspect = Math.min(
-      Math.max((s.columns * s.stepX) / (s.rows * s.stepY), 1 / MAX_ELONGATION),
-      MAX_ELONGATION,
-    );
-    const cssWidth = Math.max(Math.round(Math.min(boxWidth, boxHeight * aspect)), 1);
-    const cssHeight = Math.max(Math.round(cssWidth / aspect), 1);
+    const { width: cssWidth, height: cssHeight } = mapSize(s, narrow);
     const width = Math.round(cssWidth * ratio);
     const height = Math.round(cssHeight * ratio);
 
@@ -105,9 +126,7 @@ export class Locator {
     context.lineWidth = 1.75 * ratio;
     context.stroke();
 
-    this.caption.textContent = along
-      ? `y=${formatLength(p.index * s.stepY)}`
-      : `x=${formatLength(p.index * s.stepX)}`;
+    this.caption.textContent = captionText(s, p.axis, p.index);
     this.element.classList.add('visible');
     window.clearTimeout(this.timer);
     if (!this.held)

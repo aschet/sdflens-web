@@ -35,12 +35,12 @@ const MINOR = 3.5;
 const MIN_MINOR_SPACING = 7;
 
 /** The number of minor intervals in a major one: a step of 1 or 5 splits into 5, a step of 2 into 4. */
-function minorDivisions(step: number): number {
+export function minorDivisions(step: number): number {
   const mantissa = step / 10 ** Math.floor(Math.log10(step));
   return Math.abs(mantissa - 2) < 0.01 ? 4 : 5;
 }
 
-function minorTicks(lo: number, hi: number, major: number[]): number[] {
+export function minorTicks(lo: number, hi: number, major: number[]): number[] {
   if (major.length < 2) return [];
   const step = (major[1] as number) - (major[0] as number);
   const minorStep = step / minorDivisions(step);
@@ -58,7 +58,7 @@ function minorTicks(lo: number, hi: number, major: number[]): number[] {
 }
 
 /** The ticks of an axis for its length in pixels. */
-function ticksFor(
+export function ticksFor(
   axis: AxisSpec,
   length: number,
   spacing: number,

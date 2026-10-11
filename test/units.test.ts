@@ -4,6 +4,7 @@
 
 import { describe, expect, it } from 'vitest';
 import { buildLut, colormapNames } from '../src/colormap';
+import { minorDivisions, minorTicks, ticksFor } from '../src/render/axes';
 import {
   formatLength,
   formatExtent,
@@ -42,5 +43,43 @@ describe('colormaps', () => {
     for (const name of colormapNames()) expect(buildLut(name).length).toBe(768);
     expect([...buildLut('Grayscale', true).slice(0, 3)]).toEqual([255, 255, 255]);
     expect([...buildLut('Viridis').slice(0, 3)]).toEqual([68, 1, 84]);
+  });
+});
+
+describe('axis ticks', () => {
+  const axis = (
+    lo: number,
+    hi: number,
+    pixels = 400,
+  ): { lo: number; hi: number; toScreen: (v: number) => number; title: string } => ({
+    lo,
+    hi,
+    toScreen: (v) => ((v - lo) / (hi - lo)) * pixels,
+    title: 'x',
+  });
+
+  it('splits a major step of 1 or 5 into five and of 2 into four', () => {
+    expect([
+      minorDivisions(1),
+      minorDivisions(5),
+      minorDivisions(20),
+      minorDivisions(0.02),
+    ]).toEqual([5, 5, 4, 4]);
+  });
+
+  it('puts minor ticks between the major ones, not on them', () => {
+    expect(minorTicks(0, 10, [0, 5, 10])).toEqual([1, 2, 3, 4, 6, 7, 8, 9]);
+    expect(minorTicks(0, 10, [5])).toEqual([]);
+  });
+
+  it('gives an axis at least three major ticks and a tick about every given spacing', () => {
+    expect(ticksFor(axis(-0.4, 82), 240, 90).major).toEqual([0, 20, 40, 60, 80]);
+    expect(ticksFor(axis(0, 100), 400, 80).major).toHaveLength(6);
+  });
+
+  it('leaves out minor ticks that would be closer than 7 pixels', () => {
+    expect(ticksFor(axis(0, 100), 400, 80).minor.length).toBeGreaterThan(0);
+    expect(ticksFor(axis(0, 100000), 400, 80).minor.length).toBeGreaterThan(0);
+    expect(ticksFor(axis(0, 100, 40), 40, 10).minor).toEqual([]);
   });
 });
