@@ -275,7 +275,16 @@ input:focus-visible,
   --rl: 64px;
   --rr: 0px;
   --rt: 0px;
-  --rb: 56px;
+  --rb: var(--dock);
+}
+
+/* The height of the bar at the bottom: one row, and a second one for the controls of a profile. */
+#app {
+  --dock: 56px;
+}
+
+#app[data-view="profile"] {
+  --dock: 98px;
 }
 
 #app[data-view="2d"] .stage {
@@ -285,18 +294,6 @@ input:focus-visible,
 /* In the 3D view the tools float over the picture; the plots keep a margin for their axes. */
 #app[data-view="3d"] .stage {
   --rl: 0px;
-}
-
-#app[data-view="profile"] .stage {
-  --rt: 56px;
-}
-
-#app[data-layers="many"] .stage {
-  --rt: 56px;
-}
-
-#app[data-layers="many"][data-view="profile"] .stage {
-  --rt: 104px;
 }
 
 .view {
@@ -363,14 +360,43 @@ input:focus-visible,
   margin: 3px 6px;
 }
 
-.stepper {
-  left: 50%;
-  top: 12px;
-  transform: translateX(-50%);
+.dock {
+  left: 12px;
+  right: 12px;
+  bottom: 12px;
+  padding: 4px 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.dock-row {
   display: flex;
   align-items: center;
-  gap: 4px;
-  padding: 3px;
+  gap: 8px;
+  min-height: 34px;
+}
+
+.readout {
+  flex: 1 1 0;
+  min-width: 0;
+  padding: 0 6px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.readout.live {
+  color: var(--text);
+}
+
+.stepper {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 2px;
   font-variant-numeric: tabular-nums;
 }
 
@@ -379,8 +405,8 @@ input:focus-visible,
   border: 0;
   background: transparent;
   color: var(--text);
-  width: 32px;
-  height: 32px;
+  width: 30px;
+  height: 30px;
   border-radius: 7px;
   font-size: 20px;
   line-height: 1;
@@ -392,24 +418,16 @@ input:focus-visible,
 }
 
 .stepper span {
-  min-width: 96px;
+  min-width: 84px;
   text-align: center;
+  white-space: nowrap;
 }
 
 .profile-bar {
-  left: 50%;
-  top: 12px;
-  transform: translateX(-50%);
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 6px 12px;
-  width: min(560px, calc(100% - 24px));
-}
-
-.profile-bar select {
-  flex: none;
-  width: auto;
+  padding: 0 6px 2px;
 }
 
 .profile-bar input[type="range"] {
@@ -419,7 +437,7 @@ input:focus-visible,
 }
 
 .profile-bar span {
-  min-width: 78px;
+  min-width: 70px;
   text-align: right;
   font-variant-numeric: tabular-nums;
   color: var(--muted);
@@ -434,30 +452,9 @@ input:focus-visible,
 .colorbar {
   right: 12px;
   top: 12px;
-  bottom: 56px;
+  bottom: var(--dock);
   width: 84px;
   height: auto;
-}
-
-.readout {
-  left: 12px;
-  bottom: 12px;
-  right: 12px;
-  min-height: 34px;
-  padding: 6px 12px;
-  color: var(--muted);
-  font-variant-numeric: tabular-nums;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.readout:empty {
-  display: none;
-}
-
-.readout.live {
-  color: var(--text);
 }
 
 /* ---------------------------------------------------------------------------------------- landing */
@@ -584,7 +581,7 @@ input:focus-visible,
   position: absolute;
   z-index: 30;
   left: 50%;
-  bottom: 62px;
+  bottom: calc(var(--dock) + 8px);
   transform: translateX(-50%);
   max-width: min(560px, calc(100% - 24px));
   background: #b3261e;
@@ -722,10 +719,6 @@ input[type="range"] {
 
 /* ---------------------------------------------------------------------------- narrow screens */
 
-#app[data-layers="many"][data-view="profile"] .profile-bar {
-  top: 60px;
-}
-
 @media (max-width: 760px) {
   :root {
     --bar: 116px;
@@ -737,7 +730,7 @@ input[type="range"] {
 
   .stage {
     --rl: 0px;
-    --rb: 112px;
+    --rb: calc(var(--dock) + 56px);
   }
 
   #app[data-view="2d"] .stage {
@@ -777,7 +770,7 @@ input[type="range"] {
 
   .tools {
     top: auto;
-    bottom: 56px;
+    bottom: calc(var(--dock) + 6px);
     left: 50%;
     transform: translateX(-50%);
     flex-direction: row;
@@ -791,7 +784,7 @@ input[type="range"] {
 
   .colorbar {
     width: 76px;
-    bottom: 110px;
+    bottom: calc(var(--dock) + 56px);
   }
 
   .drawer {
@@ -806,6 +799,108 @@ input[type="range"] {
   .popover {
     left: 12px;
     width: auto;
+  }
+}
+
+/* Landscape phones and other short screens: one slim header, and a short toolbar down the left side. */
+@media (max-height: 520px) {
+  :root {
+    --bar: 52px;
+  }
+
+  .bar {
+    flex-wrap: nowrap;
+    height: var(--bar);
+    padding-top: 0;
+    padding-bottom: 0;
+  }
+
+  .file-name,
+  .actions,
+  .views {
+    order: 0;
+  }
+
+  .file-name {
+    flex: 1 1 0;
+  }
+
+  .views {
+    flex: none;
+  }
+
+  .views button {
+    flex: none;
+  }
+
+  /* The controls of a profile share the row of the status text, so the plot keeps its height. */
+  #app,
+  #app[data-view="profile"] {
+    --dock: 56px;
+  }
+
+  .dock {
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .dock-row {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+
+  .profile-bar {
+    flex: 1.3 1 0;
+    min-width: 0;
+    padding: 0 6px 0 0;
+  }
+
+  .stage {
+    --rl: 52px;
+    --rb: var(--dock);
+  }
+
+  #app[data-view="3d"] .stage {
+    --rl: 0px;
+  }
+
+  #app[data-view="2d"] .stage {
+    --rr: 92px;
+  }
+
+  .tools {
+    top: 8px;
+    left: 8px;
+    bottom: auto;
+    transform: none;
+    flex-direction: column;
+  }
+
+  .tool {
+    width: 34px;
+    height: 34px;
+  }
+
+  #zoomInButton,
+  #zoomOutButton,
+  .tools .rule {
+    display: none;
+  }
+
+  .colorbar {
+    top: 8px;
+    bottom: var(--dock);
+    width: 76px;
+  }
+
+  .drawer {
+    top: var(--bar);
+    height: auto;
+    width: min(360px, 100%);
+    border-top: 0;
+    border-left: 1px solid var(--border);
+    border-radius: 0;
   }
 }
 

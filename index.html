@@ -41,21 +41,25 @@
       <button class="tool" id="homeButton" title="Fit to the view" aria-label="Fit to the view"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
     </div>
 
-    <div class="stepper floating" id="layerBar" hidden>
-      <button id="layerPrev" aria-label="Previous layer" title="Previous layer">‹</button>
-      <span id="layerLabel">Layer 1 / 1</span>
-      <button id="layerNext" aria-label="Next layer" title="Next layer">›</button>
-    </div>
 
-    <div class="profile-bar floating" id="profileBar" hidden>
-      <div class="segmented small" id="profileDirection" role="group" aria-label="Direction of the profile"><button data-axis="x" aria-pressed="true" title="Profiles along x (rows)" aria-label="Along x"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M4 12h16M15 7l5 5-5 5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button><button data-axis="y" aria-pressed="false" title="Profiles along y (columns)" aria-label="Along y"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M12 20V4M7 9l5-5 5 5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div>
-      <input id="profileSlider" type="range" min="1" max="1" value="1" aria-label="Profile">
-      <span id="profileLabel">1 / 1</span>
-    </div>
 
     <div id="colorbarBox" class="colorbar floating" hidden><canvas id="colorbar" aria-label="Color scale"></canvas></div>
 
-    <div id="readout" class="readout floating" role="status" aria-live="polite"></div>
+    <div id="dock" class="dock floating">
+      <div class="dock-row">
+        <div id="readout" class="readout" role="status" aria-live="polite"></div>
+        <div class="stepper" id="layerBar" hidden>
+      <button id="layerPrev" aria-label="Previous layer" title="Previous layer">‹</button>
+      <span id="layerLabel">Layer 1 / 1</span>
+      <button id="layerNext" aria-label="Next layer" title="Next layer">›</button>
+</div>
+      </div>
+      <div class="profile-bar" id="profileBar" hidden>
+      <div class="segmented small" id="profileDirection" role="group" aria-label="Direction of the profile"><button data-axis="x" aria-pressed="true" title="Profiles along x (rows)" aria-label="Along x"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M4 12h16M15 7l5 5-5 5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button><button data-axis="y" aria-pressed="false" title="Profiles along y (columns)" aria-label="Along y"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M12 20V4M7 9l5-5 5 5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div>
+      <input id="profileSlider" type="range" min="1" max="1" value="1" aria-label="Profile">
+      <span id="profileLabel">1 / 1</span>
+</div>
+    </div>
 
     <div id="busy" class="busy" hidden><div class="spinner"></div><span id="busyText">Reading the file</span></div>
     <div id="toast" class="toast" role="alert" hidden></div>
