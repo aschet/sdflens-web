@@ -1,6 +1,6 @@
 {
   "name": "sdflens-web",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "Browser viewer for ISO 25178-71 SDF and ISO 25178-72 x3p files",
   "license": "GPL-3.0-or-later",
   "private": true,
