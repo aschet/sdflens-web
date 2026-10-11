@@ -5,7 +5,7 @@
 import "./style.css";
 import { buildLut, colormapNames, DEFAULT_COLORMAP } from "./colormap";
 import { readFile } from "./formats";
-import { FormatError, lateralRange, statistics, type InfoSection, type Stats, type Surface, type SurfaceFile } from "./model";
+import { FormatError, lateralRange, statistics, type Stats, type Surface, type SurfaceFile } from "./model";
 import { buildMesh, type Mesh } from "./render/mesh";
 import { ProfilePlot } from "./render/profile";
 import { View2D } from "./render/view2d";
@@ -363,19 +363,8 @@ function renderInfo(): void {
   const body = $("infoBody");
   body.replaceChildren();
   const file = state.file;
-  const stats = state.stats;
-  const s = state.surface;
-  if (!file || !stats || !s) return;
-  const layer: InfoSection = {
-    title: "Heights",
-    rows: [
-      ["Lowest", formatLength(stats.min)],
-      ["Highest", formatLength(stats.max)],
-      ["Range", formatLength(stats.max - stats.min)],
-      ["Measured points", stats.measured.toLocaleString("en")],
-    ],
-  };
-  for (const section of [...file.info, layer]) {
+  if (!file) return;
+  for (const section of file.info) {
     const heading = document.createElement("h3");
     heading.textContent = section.title;
     const list = document.createElement("dl");
