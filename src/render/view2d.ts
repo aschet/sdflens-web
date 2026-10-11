@@ -6,8 +6,9 @@
 
 import type { Surface } from '../model';
 import { formatLength } from '../units';
-import { drawAxes, type Box } from './axes';
+import { drawAxes } from './axes';
 import type { Tool } from './view3d';
+import { Viewport2D } from './viewport';
 
 const LEFT = 48;
 const TOP = 8;
@@ -85,11 +86,12 @@ export class View2D {
   private width = 1;
   private height = 1;
   private ratio = 1;
-  /** Pixels per meter, and the world position of the top left corner of the plot. */
-  private scale = 1;
-  private x0 = 0;
-  private y1 = 0;
-  private fitted = true;
+  private readonly view = new Viewport2D({
+    left: LEFT,
+    top: TOP,
+    right: RIGHT,
+    bottom: BOTTOM,
+  });
   private frame = 0;
   private marker: { column: number; row: number } | null = null;
 
@@ -152,10 +154,8 @@ export class View2D {
     this.range = range;
     this.levels.clear();
     this.marker = null;
-    if (!keepView) {
-      this.fitted = true;
-      this.fit();
-    }
+    this.view.setGrid(surface);
+    if (!keepView) this.view.home();
     this.requestRender();
   }
 
@@ -170,17 +170,16 @@ export class View2D {
   }
 
   home(): void {
-    this.fitted = true;
-    this.fit();
+    this.view.home();
     this.requestRender();
   }
 
   zoomIn(): void {
-    this.zoomAt(ZOOM_STEP, this.plotWidth() / 2, this.plotHeight() / 2);
+    this.zoomAt(ZOOM_STEP, this.view.plotWidth / 2, this.view.plotHeight / 2);
   }
 
   zoomOut(): void {
-    this.zoomAt(1 / ZOOM_STEP, this.plotWidth() / 2, this.plotHeight() / 2);
+    this.zoomAt(1 / ZOOM_STEP, this.view.plotWidth / 2, this.view.plotHeight / 2);
   }
 
   snapshot(): Promise<Blob> {
@@ -201,61 +200,8 @@ export class View2D {
 
   // -------------------------------------------------------------------------------------------- geometry
 
-  private plotWidth(): number {
-    return Math.max(this.width - LEFT - RIGHT, 1);
-  }
-
-  private plotHeight(): number {
-    return Math.max(this.height - TOP - BOTTOM, 1);
-  }
-
-  /** The area covered by the points, each centered on its coordinate. */
-  private bounds(): { x0: number; y0: number; x1: number; y1: number } {
-    const s = this.surface as Surface;
-    return {
-      x0: -0.5 * s.stepX,
-      y0: -0.5 * s.stepY,
-      x1: (s.columns - 0.5) * s.stepX,
-      y1: (s.rows - 0.5) * s.stepY,
-    };
-  }
-
-  private fit(): void {
-    if (!this.surface) return;
-    const b = this.bounds();
-    const w = b.x1 - b.x0;
-    const h = b.y1 - b.y0;
-    this.scale = Math.min(this.plotWidth() / w, this.plotHeight() / h);
-    this.x0 = b.x0 - (this.plotWidth() / this.scale - w) / 2;
-    this.y1 = b.y1 + (this.plotHeight() / this.scale - h) / 2;
-  }
-
-  private fitScale(): number {
-    const b = this.bounds();
-    return Math.min(
-      this.plotWidth() / (b.x1 - b.x0),
-      this.plotHeight() / (b.y1 - b.y0),
-    );
-  }
-
-  private toScreen(wx: number, wy: number): [number, number] {
-    return [LEFT + (wx - this.x0) * this.scale, TOP + (this.y1 - wy) * this.scale];
-  }
-
-  private toWorld(sx: number, sy: number): [number, number] {
-    return [this.x0 + (sx - LEFT) / this.scale, this.y1 - (sy - TOP) / this.scale];
-  }
-
   private zoomAt(factor: number, px: number, py: number): void {
-    if (!this.surface) return;
-    this.fitted = false;
-    const s = this.surface;
-    const [wx, wy] = this.toWorld(LEFT + px, TOP + py);
-    const smallest = this.fitScale() * 0.5;
-    const largest = Math.max(400 / Math.max(s.stepX, s.stepY), smallest);
-    this.scale = Math.min(Math.max(this.scale * factor, smallest), largest);
-    this.x0 = wx - px / this.scale;
-    this.y1 = wy + py / this.scale;
+    this.view.zoomAt(factor, px, py);
     this.requestRender();
   }
 
@@ -266,7 +212,7 @@ export class View2D {
     this.height = Math.max(Math.round(rect.height), 1);
     this.canvas.width = Math.round(this.width * this.ratio);
     this.canvas.height = Math.round(this.height * this.ratio);
-    if (this.fitted) this.fit();
+    this.view.resize(this.width, this.height);
     this.requestRender();
   }
 
@@ -326,14 +272,15 @@ export class View2D {
     context.fillStyle = this.style.background;
     context.fillRect(0, 0, this.width, this.height);
     const s = this.surface;
-    if (!s || !this.lut || this.plotWidth() < 10 || this.plotHeight() < 10) return;
+    if (!s || !this.lut || this.view.plotWidth < 10 || this.view.plotHeight < 10)
+      return;
 
-    const b = this.bounds();
-    const [left, top] = this.toScreen(b.x0, b.y1);
-    const [right, bottom] = this.toScreen(b.x1, b.y0);
+    const b = this.view.bounds();
+    const [left, top] = this.view.toScreen(b.x0, b.y1);
+    const [right, bottom] = this.view.toScreen(b.x1, b.y0);
     // Points that cover less than half a device pixel are averaged, separately along each axis.
-    const pointX = this.scale * s.stepX * this.ratio;
-    const pointY = this.scale * s.stepY * this.ratio;
+    const pointX = this.view.scale * s.stepX * this.ratio;
+    const pointY = this.view.scale * s.stepY * this.ratio;
     let blockX = blockSize(pointX, s.columns);
     let blockY = blockSize(pointY, s.rows);
     while (
@@ -349,14 +296,14 @@ export class View2D {
 
     context.save();
     context.beginPath();
-    context.rect(LEFT, TOP, this.plotWidth(), this.plotHeight());
+    context.rect(LEFT, TOP, this.view.plotWidth, this.view.plotHeight);
     context.clip();
     context.imageSmoothingEnabled = smooth;
     // Draw only the part of the image that is visible, so that a zoom into a large image stays cheap.
     const clipLeft = Math.max(left, LEFT);
-    const clipRight = Math.min(right, LEFT + this.plotWidth());
+    const clipRight = Math.min(right, LEFT + this.view.plotWidth);
     const clipTop = Math.max(top, TOP);
-    const clipBottom = Math.min(bottom, TOP + this.plotHeight());
+    const clipBottom = Math.min(bottom, TOP + this.view.plotHeight);
     if (clipRight > clipLeft && clipBottom > clipTop) {
       const sx = ((clipLeft - left) / (right - left)) * image.width;
       const sw = ((clipRight - clipLeft) / (right - left)) * image.width;
@@ -393,7 +340,7 @@ export class View2D {
   private drawMarker(context: CanvasRenderingContext2D): void {
     const s = this.surface as Surface;
     if (!this.marker) return;
-    const [x, y] = this.toScreen(
+    const [x, y] = this.view.toScreen(
       this.marker.column * s.stepX,
       this.marker.row * s.stepY,
     );
@@ -406,38 +353,21 @@ export class View2D {
     context.stroke();
   }
 
-  /** The part of the plot that the data covers: the axes run along its edges, not along those of the plot. */
-  private box(): Box {
-    const b = this.bounds();
-    const [left, top] = this.toScreen(b.x0, b.y1);
-    const [right, bottom] = this.toScreen(b.x1, b.y0);
-    const l = Math.max(left, LEFT);
-    const t = Math.max(top, TOP);
-    return {
-      left: l,
-      top: t,
-      width: Math.max(Math.min(right, LEFT + this.plotWidth()) - l, 1),
-      height: Math.max(Math.min(bottom, TOP + this.plotHeight()) - t, 1),
-    };
-  }
-
   private drawAxes(context: CanvasRenderingContext2D): void {
-    const b = this.bounds();
-    const [wx0, wy1] = this.toWorld(LEFT, TOP);
-    const [wx1, wy0] = this.toWorld(LEFT + this.plotWidth(), TOP + this.plotHeight());
+    const { x, y } = this.view.visible();
     drawAxes(
       context,
-      this.box(),
+      this.view.dataBox(),
       {
-        lo: Math.max(wx0, b.x0),
-        hi: Math.min(wx1, b.x1),
-        toScreen: (v) => this.toScreen(v, 0)[0],
+        lo: x[0],
+        hi: x[1],
+        toScreen: (v) => this.view.toScreen(v, 0)[0],
         title: 'x',
       },
       {
-        lo: Math.max(wy0, b.y0),
-        hi: Math.min(wy1, b.y1),
-        toScreen: (v) => this.toScreen(0, v)[1],
+        lo: y[0],
+        hi: y[1],
+        toScreen: (v) => this.view.toScreen(0, v)[1],
         title: 'y',
       },
       this.style,
@@ -453,7 +383,7 @@ export class View2D {
   ): { text: string; column: number; row: number } | null {
     const s = this.surface;
     if (!s) return null;
-    const [wx, wy] = this.toWorld(sx, sy);
+    const [wx, wy] = this.view.toWorld(sx, sy);
     const column = Math.floor(wx / s.stepX + 0.5);
     const row = Math.floor(wy / s.stepY + 0.5);
     if (column < 0 || column >= s.columns || row < 0 || row >= s.rows) return null;
@@ -514,8 +444,7 @@ export class View2D {
       const now = this.pinchState();
       if (now && this.pinch && this.pinch.distance > 0) {
         this.zoomAt(now.distance / this.pinch.distance, now.x - LEFT, now.y - TOP);
-        this.x0 -= (now.x - this.pinch.x) / this.scale;
-        this.y1 += (now.y - this.pinch.y) / this.scale;
+        this.view.panBy(now.x - this.pinch.x, now.y - this.pinch.y);
       }
       this.pinch = now;
       this.requestRender();
@@ -528,10 +457,9 @@ export class View2D {
       if (pointer.button === 1) tool = 'pan';
       else if (pointer.button === 2) tool = 'zoom';
     }
-    this.fitted = false;
+    this.view.fitted = false;
     if (tool === 'pan') {
-      this.x0 -= dx / this.scale;
-      this.y1 += dy / this.scale;
+      this.view.panBy(dx, dy);
       this.requestRender();
     } else {
       this.zoomAt(Math.exp(-dy * 0.01), x - LEFT, y - TOP);
