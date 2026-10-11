@@ -585,8 +585,10 @@ function showReadout(text: string): void {
   const field = [];
   if (extent) {
     // A regular grid covers its points times the step; otherwise the span of the positions is used.
-    if (s.kind === "cloud" || s.columns > 1) field.push(s.x ? extent.x[1] - extent.x[0] : s.columns * s.stepX);
-    if (s.kind === "cloud" || s.rows > 1) field.push(s.y ? extent.y[1] - extent.y[0] : s.rows * s.stepY);
+    // The extent across a profile counts if the positions vary, as along a diagonal.
+    const spans = (axis: "x" | "y"): boolean => extent[axis][1] > extent[axis][0];
+    if (s.kind === "cloud" || s.columns > 1 || (s.x && spans("x"))) field.push(s.x ? extent.x[1] - extent.x[0] : s.columns * s.stepX);
+    if (s.kind === "cloud" || s.rows > 1 || (s.y && spans("y"))) field.push(s.y ? extent.y[1] - extent.y[0] : s.rows * s.stepY);
   }
   element.textContent = `FOV ${formatExtent(field)}, PV ${formatLength(stats.max - stats.min)}`;
 }

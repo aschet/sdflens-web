@@ -93,6 +93,11 @@ describe("layers and positions", () => {
     expect(across.x).toBeNull();
     expect(across.stepX).toBeCloseTo(1e-6, 15);
     expect(across.stepAssumed).toBeUndefined();
+    // Positions across it that are valid and vary, as for a profile along a diagonal, are kept.
+    const diagonal = readFile(profile(incremental, absolute, ["0;1e-7", "1e-6;2e-7", "2e-6;3e-7", "3e-6;4e-7"]), "d.x3p").layer(0);
+    expect(irregularProfile(diagonal)).toMatchObject({ axis: "x" });
+    expect(diagonal.x?.[3]).toBeCloseTo(3e-6, 12);
+    expect(diagonal.y?.[3]).toBeCloseTo(3e-6, 12);
     // Garbage along it falls back to the step of the other axis, and says so.
     const along = readFile(profile(absolute, incremental, junk), "b.x3p");
     expect(along.layer(0)).toMatchObject({ x: null, stepAssumed: true });

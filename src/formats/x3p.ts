@@ -305,14 +305,17 @@ function toSurface(arrays: Map<string, Float32Array>, layout: Layout): Surface {
   if (along) {
     const given = arrays.get(along);
     const found = profileStep(given, along === "x" ? layout.x : layout.y, along === "x" ? layout.y : layout.x);
-    if (found && "step" in found) {
+    // The positions across the profile count if they are given and vary, as for a profile along a diagonal.
+    const across = arrays.get(along === "x" ? "y" : "x");
+    const diagonal = across !== undefined && across.every(Number.isFinite) && across.some((value) => value !== across[0]);
+    if (found && "step" in found && !diagonal) {
       // Only the axis along the profile matters; the other has a single position.
       return {
         kind: "grid", columns: layout.columns, rows: layout.rows,
         stepX: found.step, stepY: found.step, z, x: null, y: null, ...(found.assumed ? { stepAssumed: true } : {}),
       };
     }
-    if (found && given) {
+    if (found && given && !("step" in found)) {
       // An irregular profile: the positions along the profile in increasing order, and zero across it.
       const order = found.descending ? (i: number): number => given.length - 1 - i : (i: number): number => i;
       const positions = Float32Array.from(given, (_, i) => given[order(i)] as number);
