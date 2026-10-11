@@ -117,7 +117,11 @@ export function readX3p(bytes: Uint8Array, name: string): SurfaceFile {
     name,
     layerCount: layers,
     layer,
-    info: safely(() => describe({ root, record1, axesElement, cloud, columns, rows, x, y, z, binary: !!link })),
+    info: safely(() => describe({
+      root, record1, axesElement, cloud, columns, rows, x, y, z, binary: !!link,
+      // The step of a profile with an absolute axis comes from its positions.
+      profile: profileAxis({ cloud, columns, rows, x, y }) && (x.absolute || y.absolute) ? layer(0) : null,
+    })),
   };
 }
 
@@ -235,6 +239,40 @@ function decodeText(
   return arrays;
 }
 
+/** The axis along which a profile of a single row or column runs. */
+function profileAxis(layout: Layout): "x" | "y" | null {
+  if (layout.cloud) return null;
+  if (layout.rows === 1 && layout.columns > 1) return "x";
+  if (layout.columns === 1 && layout.rows > 1) return "y";
+  return null;
+}
+
+type ProfileStep = { step: number; assumed: boolean } | { irregular: true; descending: boolean } | null;
+
+/**
+ * The step of a profile. Positions along an absolute axis that are evenly spaced give their spacing; positions that
+ * are increasing or decreasing but not evenly spaced make an irregular profile. Positions that are not usable, that
+ * is not finite or neither increasing nor decreasing, are replaced by the step of the other lateral axis if that one
+ * is regular, and the step is then marked as assumed.
+ */
+function profileStep(positions: Float32Array | undefined, axis: Axis, other: Axis): ProfileStep {
+  if (!axis.absolute) return { step: Math.abs(axis.increment), assumed: false };
+  if (positions) {
+    const count = positions.length;
+    const first = positions[0] as number;
+    const mean = ((positions[count - 1] as number) - first) / (count - 1);
+    let monotonic = Number.isFinite(mean) && mean !== 0;
+    let even = true;
+    for (let i = 1; monotonic && i < count; i++) {
+      const gap = (positions[i] as number) - (positions[i - 1] as number);
+      if (!Number.isFinite(gap) || gap * mean <= 0) monotonic = false;
+      else if (Math.abs(gap - mean) > 0.02 * Math.abs(mean)) even = false;
+    }
+    if (monotonic) return even ? { step: Math.abs(mean), assumed: false } : { irregular: true, descending: mean < 0 };
+  }
+  return other.absolute ? null : { step: Math.abs(other.increment), assumed: true };
+}
+
 interface Layout {
   cloud: boolean;
   columns: number;
@@ -263,6 +301,29 @@ function toSurface(arrays: Map<string, Float32Array>, layout: Layout): Surface {
       stepX: Math.abs(layout.x.increment), stepY: Math.abs(layout.y.increment), z, x: null, y: null,
     };
   }
+  const along = profileAxis(layout);
+  if (along) {
+    const given = arrays.get(along);
+    const found = profileStep(given, along === "x" ? layout.x : layout.y, along === "x" ? layout.y : layout.x);
+    if (found && "step" in found) {
+      // Only the axis along the profile matters; the other has a single position.
+      return {
+        kind: "grid", columns: layout.columns, rows: layout.rows,
+        stepX: found.step, stepY: found.step, z, x: null, y: null, ...(found.assumed ? { stepAssumed: true } : {}),
+      };
+    }
+    if (found && given) {
+      // An irregular profile: the positions along the profile in increasing order, and zero across it.
+      const order = found.descending ? (i: number): number => given.length - 1 - i : (i: number): number => i;
+      const positions = Float32Array.from(given, (_, i) => given[order(i)] as number);
+      const heights = Float32Array.from(z, (_, i) => z[order(i)] as number);
+      const across = new Float32Array(z.length);
+      return {
+        kind: "grid", columns: layout.columns, rows: layout.rows, stepX: 0, stepY: 0, z: heights,
+        x: along === "x" ? positions : across, y: along === "y" ? positions : across,
+      };
+    }
+  }
   // One lateral axis may be regular while the other is absolute: the positions are then given for all points.
   const x = arrays.get("x") ?? new Float32Array(z.length);
   const y = arrays.get("y") ?? new Float32Array(z.length);
@@ -282,6 +343,8 @@ interface Context {
   y: Axis;
   z: Axis;
   binary: boolean;
+  /** The first layer of a profile that has an absolute lateral axis. */
+  profile: Surface | null;
 }
 
 function typeName(axis: Axis): string | undefined {
@@ -289,8 +352,8 @@ function typeName(axis: Axis): string | undefined {
 }
 
 function describe(c: Context): InfoSection[] {
-  const feature = featureOf(c.cloud, c.rows);
-  const regular = !c.x.absolute && !c.y.absolute;
+  const feature = featureOf(c.cloud, c.columns, c.rows);
+  const regular = c.profile ? c.profile.x === null : !c.x.absolute && !c.y.absolute;
   const record2 = child(c.root, "Record2");
   const value = (...path: string[]): string | undefined => {
     let element: Element | undefined = record2;
@@ -307,7 +370,11 @@ function describe(c: Context): InfoSection[] {
     revision: text(child(c.record1, "Revision")) ?? "not set",
     feature,
     size: sizeText(feature, c.columns, c.rows),
-    step: regular ? stepText(feature, Math.abs(c.x.increment), Math.abs(c.y.increment)) : "irregular",
+    step: regular
+      ? c.profile
+        ? stepText(feature, c.profile.stepX, c.profile.stepY, c.columns, c.profile.stepAssumed)
+        : stepText(feature, Math.abs(c.x.increment), Math.abs(c.y.increment), c.columns)
+      : "irregular",
     types: { x: typeName(c.x), y: typeName(c.y), z: TYPE_NAMES[c.z.type] as string },
     placement: turned || offsets.some((offset) => offset !== 0) ? "stored in the file, not applied" : undefined,
     instrument: {

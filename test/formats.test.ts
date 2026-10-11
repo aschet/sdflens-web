@@ -6,7 +6,8 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { readFile } from "../src/formats";
-import { FormatError, statistics } from "../src/model";
+import { strToU8, zipSync } from "fflate";
+import { FormatError, irregularProfile, statistics } from "../src/model";
 
 interface Expected {
   kind: "grid" | "cloud";
@@ -67,6 +68,39 @@ describe("layers and positions", () => {
     expect(irregular.y?.length).toBe(irregular.columns * irregular.rows);
     const cloud = readFile(load("x3pio_point_cloud_binary.x3p"), "cloud.x3p").layer(0);
     expect(cloud.x?.length).toBe(1000);
+  });
+
+  it("plots a profile on its real positions, or on its step if the positions are not usable", () => {
+    const irregular = readFile(load("x3pio_profile_irregular_binary.x3p"), "irregular.x3p").layer(0);
+    expect(irregularProfile(irregular)).toMatchObject({ axis: "x" });
+    expect(Array.from(irregular.x as Float32Array, (v) => Math.round(v * 1e7))).toEqual([0, 10, 30, 40, 80, 95, 120]);
+
+    // A profile as OpenGPS wrote some: the lateral axis that is absolute holds numbers that are not positions.
+    const axis = (type: string, increment: string): string =>
+      `<AxisType>${type}</AxisType><DataType>D</DataType><Increment>${increment}</Increment><Offset>0</Offset>`;
+    const incremental = axis("I", "1e-6");
+    const absolute = axis("A", "1");
+    const profile = (cx: string, cy: string, data: string[]): Uint8Array => {
+      const xml = `<?xml version="1.0"?><ISO5436_2><Record1><Revision>x</Revision><FeatureType>PRF</FeatureType><Axes>` +
+        `<CX>${cx}</CX><CY>${cy}</CY><CZ>${absolute}</CZ></Axes></Record1>` +
+        `<Record3><MatrixDimension><SizeX>4</SizeX><SizeY>1</SizeY><SizeZ>1</SizeZ></MatrixDimension>` +
+        `<DataList>${data.map((d) => `<Datum>${d}</Datum>`).join("")}</DataList></Record3></ISO5436_2>`;
+      return zipSync({ "main.xml": strToU8(xml) });
+    };
+    const junk = ["1e-4;1e-7", "-9e303;2e-7", "8e-308;3e-7", "5e-300;4e-7"];
+    // Garbage across the profile does not matter.
+    const across = readFile(profile(incremental, absolute, junk), "a.x3p").layer(0);
+    expect(across.x).toBeNull();
+    expect(across.stepX).toBeCloseTo(1e-6, 15);
+    expect(across.stepAssumed).toBeUndefined();
+    // Garbage along it falls back to the step of the other axis, and says so.
+    const along = readFile(profile(absolute, incremental, junk), "b.x3p");
+    expect(along.layer(0)).toMatchObject({ x: null, stepAssumed: true });
+    expect(along.info[1]?.rows).toContainEqual(["Step", "1 µm, assumed"]);
+    // Even positions along an absolute axis are a regular profile.
+    const even = readFile(profile(absolute, absolute, ["0;0;1e-7", "2e-6;0;2e-7", "4e-6;0;3e-7", "6e-6;0;4e-7"]), "c.x3p").layer(0);
+    expect(even.x).toBeNull();
+    expect(even.stepX).toBeCloseTo(2e-6, 12);
   });
 
   it("puts the first row of a BCR file at y = 0 like the other dialects", () => {

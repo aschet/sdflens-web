@@ -199,6 +199,16 @@
     "mean": 4.3746005955966736e-08,
     "invalid": 0
   },
+  "x3pio_profile_irregular_binary.x3p": {
+    "kind": "grid",
+    "layers": 1,
+    "columns": 7,
+    "rows": 1,
+    "min": -7.568024953079282e-08,
+    "max": 9.893582466233817e-08,
+    "mean": 8.620324367442498e-09,
+    "invalid": 0
+  },
   "x3pio_profile_layers_xml.x3p": {
     "kind": "grid",
     "layers": 3,

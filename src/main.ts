@@ -5,7 +5,7 @@
 import "./style.css";
 import { buildLut, colormapNames, DEFAULT_COLORMAP } from "./colormap";
 import { readFile } from "./formats";
-import { FormatError, lateralRange, statistics, type Stats, type Surface, type SurfaceFile } from "./model";
+import { FormatError, irregularProfile, lateralRange, statistics, type Stats, type Surface, type SurfaceFile } from "./model";
 import { buildMesh, type Mesh } from "./render/mesh";
 import { ProfilePlot } from "./render/profile";
 import { View2D } from "./render/view2d";
@@ -139,7 +139,7 @@ function available(): Record<ViewName, string | null> {
   return {
     "3d": webglProblem,
     "2d": regular && s.rows > 1 && s.columns > 1 ? null : "Needs a surface on a regular grid",
-    profile: regular ? null : "Needs a profile or a surface on a regular grid",
+    profile: regular || irregularProfile(s) ? null : "Needs a profile or a surface on a regular grid",
   };
 }
 
@@ -250,7 +250,7 @@ async function openBytes(bytes: Uint8Array, name: string): Promise<void> {
     $("fileName").title = name;
     document.title = `${name} · sdflens web`;
     const reasons = available();
-    const profileOnly = state.surface !== null && state.surface.kind === "grid" && state.surface.rows === 1;
+    const profileOnly = state.surface !== null && state.surface.kind === "grid" && (state.surface.rows === 1 || state.surface.columns === 1);
     setView(profileOnly && reasons.profile === null ? "profile" : reasons["3d"] === null ? "3d" : reasons["2d"] === null ? "2d" : "profile");
   } catch (error) {
     toast(error instanceof FormatError ? `${name}: ${error.message}` : `${name}: ${error instanceof Error ? error.message : String(error)}`);
@@ -273,8 +273,9 @@ function loadLayer(index: number, keepView: boolean): void {
   state.mesh = null;
   state.meshKeepView = keepView;
   if (!keepView) {
-    state.profileAxis = "x";
-    state.profileIndex = Math.floor(surface.rows / 2);
+    // A single column is a profile along y.
+    state.profileAxis = surface.columns < 2 ? "y" : "x";
+    state.profileIndex = Math.floor((state.profileAxis === "x" ? surface.rows : surface.columns) / 2);
     markAxis();
   }
   if (view3d) view3d.setMesh(null);
@@ -303,31 +304,39 @@ function feed2d(keepView: boolean): void {
 
 // ------------------------------------------------------------------------------------------ profile
 
-function profileSeries(): { values: Float32Array; step: number; count: number } {
+function profileSeries(): { values: Float32Array; step: number; count: number; positions: Float32Array | null } {
   const s = state.surface as Surface;
+  const irregular = irregularProfile(s);
+  if (irregular) {
+    // The mean distance between the points stands for the step.
+    const { positions } = irregular;
+    const step = (((positions[positions.length - 1] as number) - (positions[0] as number)) / Math.max(positions.length - 1, 1)) || 1;
+    return { values: s.z, step, count: 1, positions };
+  }
   if (state.profileAxis === "x") {
     const row = Math.min(state.profileIndex, s.rows - 1);
-    return { values: s.z.slice(row * s.columns, (row + 1) * s.columns), step: s.stepX, count: s.rows };
+    return { values: s.z.slice(row * s.columns, (row + 1) * s.columns), step: s.stepX, count: s.rows, positions: null };
   }
   const column = Math.min(state.profileIndex, s.columns - 1);
   const values = new Float32Array(s.rows);
   for (let r = 0; r < s.rows; r++) values[r] = s.z[r * s.columns + column] as number;
-  return { values, step: s.stepY, count: s.columns };
+  return { values, step: s.stepY, count: s.columns, positions: null };
 }
 
 function updateProfile(): void {
   const s = state.surface;
-  if (!s || s.kind !== "grid" || s.x !== null) return;
+  if (!s || s.kind !== "grid" || (s.x !== null && !irregularProfile(s))) return;
   const plot = ensureProfile();
-  const { values, step, count } = profileSeries();
-  plot.setSeries(values, step, state.profileAxis);
+  const { values, step, count, positions } = profileSeries();
+  plot.setSeries(values, step, irregularProfile(s)?.axis ?? state.profileAxis, positions);
   const slider = $("profileSlider") as HTMLInputElement;
   slider.max = String(count);
   slider.value = String(state.profileIndex + 1);
   const noun = state.profileAxis === "x" ? "Profile" : "Column";
   $("profileLabel").textContent = `${state.profileIndex + 1} / ${count}`;
   slider.setAttribute("aria-label", noun);
-  // A profile has no columns to choose along y.
+  // A profile has no columns to choose along y, and a single column no rows to choose along x.
+  ($("profileDirection").querySelector('[data-axis="x"]') as HTMLButtonElement).disabled = s.columns < 2;
   ($("profileDirection").querySelector('[data-axis="y"]') as HTMLButtonElement).disabled = s.rows < 2;
   ($("profileBar") as HTMLElement).dataset.noun = noun;
 }
@@ -335,10 +344,9 @@ function updateProfile(): void {
 function profileText(index: number): string {
   if (index < 0 || !profile || !state.surface) return "";
   const value = profile.valueAt(index);
-  const { step } = profileSeries();
   const z = Number.isFinite(value) ? formatLength(value) : "not measured";
-  const along = state.profileAxis === "x";
-  return `${along ? "x" : "y"}=${formatLength(index * step)}, z=${z}`;
+  const along = (irregularProfile(state.surface)?.axis ?? state.profileAxis) === "x";
+  return `${along ? "x" : "y"}=${formatLength(profile.positionAt(index))}, z=${z}`;
 }
 
 /** Shows where the profile lies on the surface, for as long as the slider is used. */
@@ -577,7 +585,7 @@ function showReadout(text: string): void {
   const field = [];
   if (extent) {
     // A regular grid covers its points times the step; otherwise the span of the positions is used.
-    field.push(s.x ? extent.x[1] - extent.x[0] : s.columns * s.stepX);
+    if (s.kind === "cloud" || s.columns > 1) field.push(s.x ? extent.x[1] - extent.x[0] : s.columns * s.stepX);
     if (s.kind === "cloud" || s.rows > 1) field.push(s.y ? extent.y[1] - extent.y[0] : s.rows * s.stepY);
   }
   element.textContent = `FOV ${formatExtent(field)}, PV ${formatLength(stats.max - stats.min)}`;

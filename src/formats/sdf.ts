@@ -348,13 +348,13 @@ function latin1(bytes: Uint8Array): string {
 }
 
 function describe(header: Header): InfoSection[] {
-  const feature = featureOf(false, header.rows);
+  const feature = featureOf(false, header.columns, header.rows);
   return describeFile({
     format: `SDF ${header.binary ? "binary" : "ASCII"}`,
     revision: header.dialect,
     feature,
     size: sizeText(feature, header.columns, header.rows),
-    step: stepText(feature, header.xScale, header.yScale),
+    step: stepText(feature, header.xScale, header.yScale, header.columns),
     // The lateral axes are given by their steps; only the heights are stored.
     types: { z: header.type.name },
     resolution: header.zResolution < 0 ? undefined : formatLength(header.zResolution),

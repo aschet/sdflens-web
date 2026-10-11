@@ -7,7 +7,7 @@ import type { Surface } from "../src/model";
 import { Camera } from "../src/render/camera";
 import { buildMesh, vertexPosition } from "../src/render/mesh";
 import { pick, pickFace, pickVertex, project } from "../src/render/pick";
-import { envelope, connect } from "../src/render/profile";
+import { envelope, connect, lowerBound, positionEnvelope } from "../src/render/profile";
 import { blockSize, reduce } from "../src/render/view2d";
 
 function grid(rows: number, columns: number, height: (r: number, c: number) => number): Surface {
@@ -150,6 +150,16 @@ describe("profile and image helpers", () => {
     expect([...e.low]).toEqual([1, 2]);
     expect([...e.high]).toEqual([3, 8]);
     expect(envelope(values, 10, 12, 4).columns.length).toBe(0);
+  });
+
+  it("bins the points of an irregular profile by their positions", () => {
+    const positions = Float32Array.from([0, 1, 9, 9.5]);
+    const values = Float32Array.from([1, 2, 5, 7]);
+    const e = positionEnvelope(values, positions, 0, 4, 0, 10, 2);
+    expect([...e.columns]).toEqual([0, 1]);
+    expect([...e.low]).toEqual([1, 5]);
+    expect([...e.high]).toEqual([2, 7]);
+    expect([lowerBound(positions, 1), lowerBound(positions, 5), lowerBound(positions, 11)]).toEqual([1, 2, 4]);
   });
 
   it("closes the gaps between adjacent columns only", () => {

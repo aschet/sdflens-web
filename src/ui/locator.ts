@@ -35,7 +35,7 @@ export class Locator {
   /** Shows the map with the profile marked. It stays while the slider is held and a moment after the last change. */
   show(p: Placement): void {
     const { surface: s } = p;
-    if (s.rows < 2) return;
+    if (s.rows < 2 || s.columns < 2) return;
     const ratio = window.devicePixelRatio || 1;
     const narrow = window.matchMedia("(max-width: 760px)").matches;
     const [boxWidth, boxHeight] = narrow ? [112, 84] : [160, 120];

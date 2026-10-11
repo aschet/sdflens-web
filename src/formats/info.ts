@@ -41,18 +41,20 @@ export function isPlaceholder(value: string | undefined): boolean {
   return value === undefined || PLACEHOLDER.test(value.trim());
 }
 
-/** A profile is a surface of a single row. */
-export function featureOf(cloud: boolean, rows: number): Feature {
-  return cloud ? "Point cloud" : rows === 1 ? "Profile" : "Surface";
+/** A profile is a surface of a single row or a single column. */
+export function featureOf(cloud: boolean, columns: number, rows: number): Feature {
+  return cloud ? "Point cloud" : rows === 1 || columns === 1 ? "Profile" : "Surface";
 }
 
 export function sizeText(feature: Feature, columns: number, rows: number): string {
   const count = (value: number): string => value.toLocaleString("en");
-  return feature === "Surface" ? `${count(columns)} × ${count(rows)} points` : `${count(columns)} points`;
+  return feature === "Surface" ? `${count(columns)} × ${count(rows)} points` : `${count(Math.max(columns, rows))} points`;
 }
 
-export function stepText(feature: Feature, stepX: number, stepY: number): string {
-  return feature === "Surface" ? `${formatLength(stepX)} × ${formatLength(stepY)}` : formatLength(stepX);
+export function stepText(feature: Feature, stepX: number, stepY: number, columns: number, assumed = false): string {
+  if (feature === "Surface") return `${formatLength(stepX)} × ${formatLength(stepY)}`;
+  const step = formatLength(columns === 1 ? stepY : stepX);
+  return assumed ? `${step}, assumed` : step;
 }
 
 const DATE = /^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2})(?::\d{2}(?:\.\d+)?)?\s*(Z|[+-]\d{2}(?::?\d{2})?)?/;

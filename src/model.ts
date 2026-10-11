@@ -14,6 +14,8 @@ export interface Surface {
   stepY: number;
   /** Heights, row by row. */
   z: Float32Array;
+  /** Set when the file gives no usable positions and the step was taken from the other lateral axis. */
+  stepAssumed?: boolean;
   /** Positions of the points when the axes are not regular, otherwise null. */
   x: Float32Array | null;
   y: Float32Array | null;
@@ -81,4 +83,12 @@ export function lateralRange(surface: Surface): { x: [number, number]; y: [numbe
   const x = range(surface.x, surface.columns, surface.stepX);
   const y = range(surface.y, surface.rows, surface.stepY);
   return { x, y };
+}
+
+/** The positions along a profile of a single row or column whose points are irregularly spaced, in increasing order. */
+export function irregularProfile(surface: Surface): { axis: "x" | "y"; positions: Float32Array } | null {
+  if (surface.kind !== "grid" || !surface.x || !surface.y) return null;
+  if (surface.rows === 1 && surface.columns > 1) return { axis: "x", positions: surface.x };
+  if (surface.columns === 1 && surface.rows > 1) return { axis: "y", positions: surface.y };
+  return null;
 }
