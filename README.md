@@ -9,17 +9,6 @@ any static host, without a server of its own.
 
 Online: <https://aschet.github.io/sdflens-web/>
 
-## Features
-
-- SDF in the dialects ISO-1.0, ISO-2.0 and BCR-1.0, ASCII and binary.
-- x3p of both revisions of ISO 25178-72: surfaces, profiles, surfaces with absolute axes (irregular grids), point
-  clouds and layers, with binary or text data and the validity file.
-- 3D view (WebGL 2) with the render modes surface, grid and points, a height scale and colormaps.
-- 2D height map and profile view, which stay fast for large grids.
-- Click, tap or hover reads the position and height of a point.
-- Mouse and touch (drag, pinch); light and dark theme; the layout follows the screen size.
-- File information, and the view as PNG.
-
 Not supported: SDF with compression or checksums, as in [sdfio](https://github.com/aschet/sdfio), and the placement
 of an x3p file (rotation and offset of the axes), which is shown but not applied. The page does not save or convert
 files.
