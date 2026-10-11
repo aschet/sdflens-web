@@ -294,7 +294,7 @@ function describe(c: Context): InfoSection[] {
   const turned = rotation !== undefined && Array.from(rotation.children).some((e, i) => Math.abs(Number(e.textContent) - (i % 4 === 0 ? 1 : 0)) > 1e-9);
 
   return describeFile({
-    format: `x3p, ${c.binary ? "binary" : "XML"}`,
+    format: `x3p ${c.binary ? "binary" : "XML"}`,
     revision: text(child(c.record1, "Revision")) ?? "not set",
     feature,
     size: sizeText(feature, c.columns, c.rows),

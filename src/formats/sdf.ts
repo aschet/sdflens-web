@@ -350,7 +350,7 @@ function latin1(bytes: Uint8Array): string {
 function describe(header: Header): InfoSection[] {
   const feature = featureOf(false, header.rows);
   return describeFile({
-    format: `SDF, ${header.binary ? "binary" : "ASCII"}`,
+    format: `SDF ${header.binary ? "binary" : "ASCII"}`,
     revision: header.dialect,
     feature,
     size: sizeText(feature, header.columns, header.rows),

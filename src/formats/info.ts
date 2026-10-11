@@ -10,7 +10,7 @@ import { formatLength } from "../units";
 export type Feature = "Surface" | "Profile" | "Point cloud";
 
 export interface Description {
-  /** The format with its encoding, as in "SDF, binary" or "x3p, XML". */
+  /** The format with its encoding, as in "SDF binary" or "x3p XML". */
   format: string;
   revision: string;
   feature: Feature;
