@@ -372,7 +372,6 @@ function renderInfo(): void {
       ["Highest", formatLength(stats.max)],
       ["Range", formatLength(stats.max - stats.min)],
       ["Measured points", stats.measured.toLocaleString("en")],
-      ["Not measured", stats.invalid.toLocaleString("en")],
     ],
   };
   for (const section of [...file.info, layer]) {
@@ -555,7 +554,7 @@ function showReadout(text: string): void {
     return;
   }
   const size = s.kind === "cloud" ? `${s.columns.toLocaleString("en")} points` : s.rows === 1 ? `${s.columns.toLocaleString("en")} points` : `${s.columns.toLocaleString("en")} × ${s.rows.toLocaleString("en")} points`;
-  element.textContent = `${size}${stats.invalid ? `, ${stats.invalid.toLocaleString("en")} not measured` : ""}`;
+  element.textContent = size;
 }
 
 // ------------------------------------------------------------------------------------------ opening files
