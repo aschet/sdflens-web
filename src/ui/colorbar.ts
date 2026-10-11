@@ -18,7 +18,9 @@ export class Colorbar {
   private readonly observer: ResizeObserver;
 
   constructor(private readonly canvas: HTMLCanvasElement) {
-    this.observer = new ResizeObserver(() => this.draw());
+    this.observer = new ResizeObserver(() => {
+      this.draw();
+    });
     this.observer.observe(canvas);
   }
 

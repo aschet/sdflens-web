@@ -28,7 +28,20 @@ export function project(
   width: number,
   height: number,
 ): Projection {
-  const m = multiply(proj, view) as number[] & { [index: number]: number };
+  const matrix = multiply(proj, view);
+  const at = (k: number): number => matrix[k] as number;
+  const m0 = at(0);
+  const m1 = at(1);
+  const m2 = at(2);
+  const m3 = at(3);
+  const m4 = at(4);
+  const m5 = at(5);
+  const m6 = at(6);
+  const m7 = at(7);
+  const m12 = at(12);
+  const m13 = at(13);
+  const m14 = at(14);
+  const m15 = at(15);
   const count = vertices.length / 3;
   const x = new Float32Array(count);
   const y = new Float32Array(count);
@@ -37,9 +50,9 @@ export function project(
     const px = vertices[i * 3] as number;
     const py = vertices[i * 3 + 1] as number;
     const pz = (vertices[i * 3 + 2] as number) * zFactor;
-    const w = m[12]! * px + m[13]! * py + m[14]! * pz + m[15]!;
-    const cx = m[0]! * px + m[1]! * py + m[2]! * pz + m[3]!;
-    const cy = m[4]! * px + m[5]! * py + m[6]! * pz + m[7]!;
+    const w = m12 * px + m13 * py + m14 * pz + m15;
+    const cx = m0 * px + m1 * py + m2 * pz + m3;
+    const cy = m4 * px + m5 * py + m6 * pz + m7;
     depth[i] = w;
     x[i] = (cx / w + 1) * 0.5 * width;
     y[i] = (1 - cy / w) * 0.5 * height;

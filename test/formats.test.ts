@@ -155,7 +155,13 @@ describe('errors', () => {
   });
 
   it('rejects a zip archive without main.xml', () => {
-    const zip = new Uint8Array([0x50, 0x4b, 0x05, 0x06, ...new Array(18).fill(0)]);
+    const zip = new Uint8Array([
+      0x50,
+      0x4b,
+      0x05,
+      0x06,
+      ...new Array<number>(18).fill(0),
+    ]);
     expect(() => readFile(zip, 'empty.x3p')).toThrow(FormatError);
   });
 });

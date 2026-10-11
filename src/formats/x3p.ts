@@ -61,10 +61,10 @@ export function readX3p(bytes: Uint8Array, name: string): SurfaceFile {
   const mainBytes = files.get(prefix + 'main.xml');
   if (!mainBytes) throw new FormatError('The file contains no main.xml');
   const doc = new DOMParser().parseFromString(
-    new TextDecoder('utf-8').decode(mainBytes).replace(/^﻿/, ''),
+    new TextDecoder('utf-8').decode(mainBytes).replace(/^\uFEFF/, ''),
     'application/xml',
   );
-  if (doc.getElementsByTagName('parsererror').length > 0 || !doc.documentElement) {
+  if (doc.getElementsByTagName('parsererror').length > 0) {
     throw new FormatError('main.xml is not valid XML');
   }
   const root = doc.documentElement;
@@ -243,8 +243,8 @@ function need(parent: Element, name: string): Element {
 }
 
 function text(element: Element | undefined): string | undefined {
-  const value = element?.textContent?.trim();
-  return value ? value : undefined;
+  const value = element?.textContent.trim();
+  return value === '' ? undefined : value;
 }
 
 function number(element: Element | undefined, what: string): number {
@@ -323,7 +323,7 @@ function decodeText(
   );
   const outputs = [...arrays.values()];
   for (let i = 0; i < points; i++) {
-    const content = ((datums[layer * points + i] as Element).textContent ?? '').trim();
+    const content = (datums[layer * points + i] as Element).textContent.trim();
     if (content === '') continue;
     const values = content.split(';');
     if (values.length !== absolute.length)

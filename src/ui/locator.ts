@@ -59,7 +59,7 @@ export class Locator {
     const height = Math.round(cssHeight * ratio);
 
     const key = `${p.lutKey}|${width}x${height}`;
-    if (!this.cache || this.cache.surface !== s || this.cache.key !== key) {
+    if (this.cache?.surface !== s || this.cache.key !== key) {
       this.cache = {
         surface: s,
         key,
@@ -107,7 +107,10 @@ export class Locator {
       : `x=${formatLength(p.index * s.stepX)}`;
     this.element.classList.add('visible');
     window.clearTimeout(this.timer);
-    if (!this.held) this.timer = window.setTimeout(() => this.hide(), HIDE_DELAY);
+    if (!this.held)
+      this.timer = window.setTimeout(() => {
+        this.hide();
+      }, HIDE_DELAY);
   }
 
   /** Keeps the map shown, as long as the slider is being dragged. */
@@ -120,7 +123,9 @@ export class Locator {
     this.held = false;
     if (this.element.classList.contains('visible')) {
       window.clearTimeout(this.timer);
-      this.timer = window.setTimeout(() => this.hide(), HIDE_DELAY);
+      this.timer = window.setTimeout(() => {
+        this.hide();
+      }, HIDE_DELAY);
     }
   }
 

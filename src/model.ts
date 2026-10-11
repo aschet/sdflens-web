@@ -59,8 +59,8 @@ export function statistics(surface: Surface): Stats {
     const value = z[i] as number;
     if (
       !Number.isFinite(value) ||
-      (x && !Number.isFinite(x[i] as number)) ||
-      (y && !Number.isFinite(y[i] as number))
+      (x && !Number.isFinite(x[i])) ||
+      (y && !Number.isFinite(y[i]))
     ) {
       continue;
     }
@@ -84,8 +84,7 @@ export function lateralRange(surface: Surface): {
     if (!values) return [0, (count - 1) * step];
     let lo = Infinity;
     let hi = -Infinity;
-    for (let i = 0; i < values.length; i++) {
-      const value = values[i] as number;
+    for (const value of values) {
       if (value < lo) lo = value;
       if (value > hi) hi = value;
     }

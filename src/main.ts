@@ -24,13 +24,15 @@ import {
   type RenderMode,
   type Tool,
 } from './render/view3d';
-import { SAMPLES } from './samples';
+import { SAMPLES, type Sample } from './samples';
 import { Colorbar } from './ui/colorbar';
 import { Locator } from './ui/locator';
 import { formatExtent, formatLength } from './units';
 
 type ViewName = '3d' | '2d' | 'profile';
 
+// The type argument names the element type at the call site, as in $<HTMLCanvasElement>('id').
+// eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters
 const $ = <T extends HTMLElement>(id: string): T => document.getElementById(id) as T;
 const app = $('app');
 
@@ -115,9 +117,9 @@ function currentTheme(): 'light' | 'dark' {
   return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
 }
 
-$('themeButton').addEventListener('click', () =>
-  setTheme(currentTheme() === 'dark' ? 'light' : 'dark'),
-);
+$('themeButton').addEventListener('click', () => {
+  setTheme(currentTheme() === 'dark' ? 'light' : 'dark');
+});
 
 // ------------------------------------------------------------------------------------------------ views
 
@@ -129,7 +131,9 @@ function ensureView3d(): View3D | null {
     webglProblem = error instanceof Error ? error.message : 'WebGL 2 is not available';
     return null;
   }
-  view3d.onPick = (text) => showReadout(text);
+  view3d.onPick = (text) => {
+    showReadout(text);
+  };
   view3d.setLut(currentLut());
   view3d.setZFactor(state.zFactor);
   view3d.setRenderMode(state.mode);
@@ -141,7 +145,9 @@ function ensureView3d(): View3D | null {
 function ensureView2d(): View2D {
   if (!view2d) {
     view2d = new View2D($('view2d'));
-    view2d.onHover = (text) => showReadout(text);
+    view2d.onHover = (text) => {
+      showReadout(text);
+    };
     view2d.setLut(currentLut());
     view2d.setTool(state.tool);
     applyColors();
@@ -152,7 +158,9 @@ function ensureView2d(): View2D {
 function ensureProfile(): ProfilePlot {
   if (!profile) {
     profile = new ProfilePlot($('viewProfile'));
-    profile.onHover = (index) => showReadout(profileText(index));
+    profile.onHover = (index) => {
+      showReadout(profileText(index));
+    };
     applyColors();
   }
   return profile;
@@ -340,7 +348,8 @@ function loadLayer(index: number, keepView: boolean): void {
   const layers = file.layerCount;
   $('layerBar').hidden = layers < 2;
   app.dataset.layers = layers < 2 ? 'one' : 'many';
-  $('layerLabel').lastChild!.textContent = `${index + 1} / ${layers}`;
+  const label = $('layerLabel').lastChild;
+  if (label) label.textContent = `${index + 1} / ${layers}`;
   renderInfo();
   if (app.dataset.state === 'loaded') {
     if (state.view === '3d') ensureMesh();
@@ -394,7 +403,7 @@ function profileSeries(): {
 
 function updateProfile(): void {
   const s = state.surface;
-  if (!s || s.kind !== 'grid' || (s.x !== null && !irregularProfile(s))) return;
+  if (s?.kind !== 'grid' || (s.x !== null && !irregularProfile(s))) return;
   const plot = ensureProfile();
   const { values, step, count, positions } = profileSeries();
   plot.setSeries(
@@ -403,7 +412,7 @@ function updateProfile(): void {
     irregularProfile(s)?.axis ?? state.profileAxis,
     positions,
   );
-  const slider = $('profileSlider') as HTMLInputElement;
+  const slider = $<HTMLInputElement>('profileSlider');
   slider.max = String(count);
   slider.value = String(state.profileIndex + 1);
   const noun = state.profileAxis === 'x' ? 'Profile' : 'Column';
@@ -416,7 +425,7 @@ function updateProfile(): void {
   (
     $('profileDirection').querySelector('[data-axis="y"]') as HTMLButtonElement
   ).disabled = s.rows < 2;
-  ($('profileBar') as HTMLElement).dataset.noun = noun;
+  $<HTMLElement>('profileBar').dataset.noun = noun;
 }
 
 function profileText(index: number): string {
@@ -475,8 +484,20 @@ $('profileSlider').addEventListener('input', (event) => {
 $('profileSlider').addEventListener('pointerdown', () => {
   locator.hold();
   showLocator();
-  window.addEventListener('pointerup', () => locator.release(), { once: true });
-  window.addEventListener('pointercancel', () => locator.release(), { once: true });
+  window.addEventListener(
+    'pointerup',
+    () => {
+      locator.release();
+    },
+    { once: true },
+  );
+  window.addEventListener(
+    'pointercancel',
+    () => {
+      locator.release();
+    },
+    { once: true },
+  );
 });
 
 // ----------------------------------------------------------------------------------------- information
@@ -501,7 +522,7 @@ function renderInfo(): void {
   }
 }
 
-const isHidden = (id: string): boolean => $(id).hidden !== false;
+const isHidden = (id: string): boolean => $(id).hidden;
 
 const PANELS = {
   display: 'displayButton',
@@ -518,15 +539,19 @@ function setPanel(id: keyof typeof PANELS, open: boolean): void {
   }
 }
 
-$('displayButton').addEventListener('click', () =>
-  setPanel('display', isHidden('display')),
-);
-$('infoButton').addEventListener('click', () => setPanel('drawer', isHidden('drawer')));
-$('aboutButton').addEventListener('click', () => setPanel('about', isHidden('about')));
+$('displayButton').addEventListener('click', () => {
+  setPanel('display', isHidden('display'));
+});
+$('infoButton').addEventListener('click', () => {
+  setPanel('drawer', isHidden('drawer'));
+});
+$('aboutButton').addEventListener('click', () => {
+  setPanel('about', isHidden('about'));
+});
 
 // ---------------------------------------------------------------------------------------------- display
 
-const colormapSelect = $('colormapSelect') as HTMLSelectElement;
+const colormapSelect = $<HTMLSelectElement>('colormapSelect');
 for (const name of colormapNames()) colormapSelect.add(new Option(name, name));
 colormapSelect.value = state.colormap;
 
@@ -559,7 +584,7 @@ for (const button of document.querySelectorAll<HTMLButtonElement>(
   });
 }
 
-const zSlider = $('zSlider') as HTMLInputElement;
+const zSlider = $<HTMLInputElement>('zSlider');
 const SLIDER_MAX = 1000;
 const logMin = Math.log10(Z_FACTOR_MIN);
 const logMax = Math.log10(Z_FACTOR_MAX);
@@ -581,7 +606,9 @@ zSlider.addEventListener('input', () => {
   if (Math.abs(Math.log10(factor)) < 0.03) factor = 1;
   setZFactor(factor);
 });
-$('zReset').addEventListener('click', () => setZFactor(1));
+$('zReset').addEventListener('click', () => {
+  setZFactor(1);
+});
 setZFactor(1);
 
 // ------------------------------------------------------------------------------------------------ tools
@@ -606,11 +633,17 @@ $('zoomInButton').addEventListener('click', () => activeView()?.zoomIn());
 $('zoomOutButton').addEventListener('click', () => activeView()?.zoomOut());
 
 for (const button of document.querySelectorAll<HTMLButtonElement>('.views button')) {
-  button.addEventListener('click', () => setView(button.dataset.view as ViewName));
+  button.addEventListener('click', () => {
+    setView(button.dataset.view as ViewName);
+  });
 }
 
-$('layerPrev').addEventListener('click', () => stepLayer(-1));
-$('layerNext').addEventListener('click', () => stepLayer(1));
+$('layerPrev').addEventListener('click', () => {
+  stepLayer(-1);
+});
+$('layerNext').addEventListener('click', () => {
+  stepLayer(1);
+});
 
 function stepLayer(delta: number): void {
   const file = state.file;
@@ -630,7 +663,7 @@ async function screenshot(
 ): Promise<Blob> {
   const picture = await view.snapshot();
   const bar = $('colorbarBox');
-  if (bar.hidden !== false) return picture;
+  if (bar.hidden) return picture;
   const image = await createImageBitmap(picture);
   const hostRect = host.getBoundingClientRect();
   const barRect = bar.getBoundingClientRect();
@@ -667,15 +700,15 @@ async function screenshot(
     barRect.width * ratio,
     barRect.height * ratio,
   );
-  return new Promise((resolve, reject) =>
-    canvas.toBlob(
-      (blob) => (blob ? resolve(blob) : reject(new Error('No image'))),
-      'image/png',
-    ),
-  );
+  return new Promise((resolve, reject) => {
+    canvas.toBlob((blob) => {
+      if (blob) resolve(blob);
+      else reject(new Error('No image'));
+    }, 'image/png');
+  });
 }
 
-$('shotButton').addEventListener('click', async () => {
+async function saveScreenshot(): Promise<void> {
   const view = activeView();
   if (!view || !state.file) return;
   const host = $(
@@ -686,7 +719,13 @@ $('shotButton').addEventListener('click', async () => {
   link.href = URL.createObjectURL(blob);
   link.download = `${state.file.name.replace(/\.[^.]+$/, '')}-${state.view}.png`;
   link.click();
-  setTimeout(() => URL.revokeObjectURL(link.href), 10_000);
+  setTimeout(() => {
+    URL.revokeObjectURL(link.href);
+  }, 10_000);
+}
+
+$('shotButton').addEventListener('click', () => {
+  void saveScreenshot();
 });
 
 // --------------------------------------------------------------------------------------- readout
@@ -721,8 +760,10 @@ function showReadout(text: string): void {
 
 // ------------------------------------------------------------------------------------------ opening files
 
-const fileInput = $('fileInput') as HTMLInputElement;
-const choose = (): void => fileInput.click();
+const fileInput = $<HTMLInputElement>('fileInput');
+const choose = (): void => {
+  fileInput.click();
+};
 $('openButton').addEventListener('click', choose);
 $('landingOpen').addEventListener('click', choose);
 
@@ -760,19 +801,23 @@ window.addEventListener('drop', (event) => {
   if (file) void openFile(file);
 });
 
+async function openSample(sample: Sample): Promise<void> {
+  setBusy(`Reading ${sample.file}`);
+  try {
+    const response = await fetch(sample.url);
+    await openBytes(new Uint8Array(await response.arrayBuffer()), sample.file);
+  } catch (error) {
+    setBusy(null);
+    toast(error instanceof Error ? error.message : String(error));
+  }
+}
+
 for (const sample of SAMPLES) {
   const button = document.createElement('button');
   button.className = 'button';
   button.textContent = `${sample.title} · ${sample.kind}`;
-  button.addEventListener('click', async () => {
-    setBusy(`Reading ${sample.file}`);
-    try {
-      const response = await fetch(sample.url);
-      await openBytes(new Uint8Array(await response.arrayBuffer()), sample.file);
-    } catch (error) {
-      setBusy(null);
-      toast(error instanceof Error ? error.message : String(error));
-    }
+  button.addEventListener('click', () => {
+    void openSample(sample);
   });
   $('sampleList').append(button);
 }

@@ -134,7 +134,7 @@ interface Style {
 
 export class ProfilePlot {
   /** Called with the index of the point under the cursor, or -1. */
-  onHover: (index: number) => void = () => {};
+  onHover: (index: number) => void = () => undefined;
 
   private readonly canvas = document.createElement('canvas');
   private readonly observer: ResizeObserver;
@@ -167,20 +167,36 @@ export class ProfilePlot {
     this.canvas.className = 'plane';
     this.canvas.style.touchAction = 'none';
     host.append(this.canvas);
-    this.canvas.addEventListener('pointerdown', (event) => this.onPointerDown(event));
-    this.canvas.addEventListener('pointermove', (event) => this.onPointerMove(event));
-    this.canvas.addEventListener('pointerup', (event) => this.onPointerUp(event));
-    this.canvas.addEventListener('pointercancel', (event) =>
-      this.onPointerUp(event, true),
-    );
+    this.canvas.addEventListener('pointerdown', (event) => {
+      this.onPointerDown(event);
+    });
+    this.canvas.addEventListener('pointermove', (event) => {
+      this.onPointerMove(event);
+    });
+    this.canvas.addEventListener('pointerup', (event) => {
+      this.onPointerUp(event);
+    });
+    this.canvas.addEventListener('pointercancel', (event) => {
+      this.onPointerUp(event, true);
+    });
     this.canvas.addEventListener('pointerleave', (event) => {
       if (event.pointerType === 'mouse' && this.pointers.size === 0) this.setHover(-1);
     });
-    this.canvas.addEventListener('wheel', (event) => this.onWheel(event), {
-      passive: false,
+    this.canvas.addEventListener(
+      'wheel',
+      (event) => {
+        this.onWheel(event);
+      },
+      {
+        passive: false,
+      },
+    );
+    this.canvas.addEventListener('contextmenu', (event) => {
+      event.preventDefault();
     });
-    this.canvas.addEventListener('contextmenu', (event) => event.preventDefault());
-    this.observer = new ResizeObserver(() => this.resize());
+    this.observer = new ResizeObserver(() => {
+      this.resize();
+    });
     this.observer.observe(host);
     this.resize();
   }
@@ -244,12 +260,12 @@ export class ProfilePlot {
 
   snapshot(): Promise<Blob> {
     this.render();
-    return new Promise((resolve, reject) =>
-      this.canvas.toBlob(
-        (blob) => (blob ? resolve(blob) : reject(new Error('No image'))),
-        'image/png',
-      ),
-    );
+    return new Promise((resolve, reject) => {
+      this.canvas.toBlob((blob) => {
+        if (blob) resolve(blob);
+        else reject(new Error('No image'));
+      }, 'image/png');
+    });
   }
 
   dispose(): void {

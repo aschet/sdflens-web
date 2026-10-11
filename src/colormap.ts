@@ -18,7 +18,8 @@ export function buildLut(name: string, reverse = false): Uint8Array {
   if (table === undefined) {
     for (let i = 0; i < LUT_SIZE; i++) lut.fill(i, i * 3, i * 3 + 3);
   } else {
-    for (let i = 0; i < lut.length; i++) lut[i] = parseInt(table.substr(i * 2, 2), 16);
+    for (let i = 0; i < lut.length; i++)
+      lut[i] = parseInt(table.slice(i * 2, i * 2 + 2), 16);
   }
   if (!reverse) return lut;
   const reversed = new Uint8Array(lut.length);

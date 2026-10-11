@@ -72,7 +72,7 @@ interface Pointer {
 
 export class View3D {
   /** Called with the position of the picked point as text, empty when the click picks nothing. */
-  onPick: (text: string) => void = () => {};
+  onPick: (text: string) => void = () => undefined;
 
   private readonly canvas = document.createElement('canvas');
   private readonly overlay = document.createElement('canvas');
@@ -118,10 +118,10 @@ export class View3D {
         gl.getUniformLocation(this.program, name),
       ]),
     );
-    this.vao = gl.createVertexArray() as WebGLVertexArrayObject;
-    this.vertexBuffer = gl.createBuffer() as WebGLBuffer;
-    this.indexBuffer = gl.createBuffer() as WebGLBuffer;
-    this.texture = gl.createTexture() as WebGLTexture;
+    this.vao = gl.createVertexArray();
+    this.vertexBuffer = gl.createBuffer();
+    this.indexBuffer = gl.createBuffer();
+    this.texture = gl.createTexture();
     gl.bindTexture(gl.TEXTURE_2D, this.texture);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
@@ -129,17 +129,33 @@ export class View3D {
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
 
     this.overlay.style.touchAction = 'none';
-    this.overlay.addEventListener('pointerdown', (event) => this.onPointerDown(event));
-    this.overlay.addEventListener('pointermove', (event) => this.onPointerMove(event));
-    this.overlay.addEventListener('pointerup', (event) => this.onPointerUp(event));
-    this.overlay.addEventListener('pointercancel', (event) =>
-      this.onPointerUp(event, true),
-    );
-    this.overlay.addEventListener('wheel', (event) => this.onWheel(event), {
-      passive: false,
+    this.overlay.addEventListener('pointerdown', (event) => {
+      this.onPointerDown(event);
     });
-    this.overlay.addEventListener('contextmenu', (event) => event.preventDefault());
-    this.observer = new ResizeObserver(() => this.resize());
+    this.overlay.addEventListener('pointermove', (event) => {
+      this.onPointerMove(event);
+    });
+    this.overlay.addEventListener('pointerup', (event) => {
+      this.onPointerUp(event);
+    });
+    this.overlay.addEventListener('pointercancel', (event) => {
+      this.onPointerUp(event, true);
+    });
+    this.overlay.addEventListener(
+      'wheel',
+      (event) => {
+        this.onWheel(event);
+      },
+      {
+        passive: false,
+      },
+    );
+    this.overlay.addEventListener('contextmenu', (event) => {
+      event.preventDefault();
+    });
+    this.observer = new ResizeObserver(() => {
+      this.resize();
+    });
     this.observer.observe(host);
     this.resize();
   }
@@ -225,12 +241,12 @@ export class View3D {
     const context = out.getContext('2d') as CanvasRenderingContext2D;
     context.drawImage(this.canvas, 0, 0);
     context.drawImage(this.overlay, 0, 0);
-    return new Promise((resolve, reject) =>
-      out.toBlob(
-        (blob) => (blob ? resolve(blob) : reject(new Error('No image'))),
-        'image/png',
-      ),
-    );
+    return new Promise((resolve, reject) => {
+      out.toBlob((blob) => {
+        if (blob) resolve(blob);
+        else reject(new Error('No image'));
+      }, 'image/png');
+    });
   }
 
   dispose(): void {
@@ -249,7 +265,7 @@ export class View3D {
 
   private createProgram(): WebGLProgram {
     const gl = this.gl;
-    const program = gl.createProgram() as WebGLProgram;
+    const program = gl.createProgram();
     for (const [type, source] of [
       [gl.VERTEX_SHADER, VERTEX_SHADER],
       [gl.FRAGMENT_SHADER, FRAGMENT_SHADER],
@@ -599,7 +615,7 @@ function projectOne(
 /** The red, green and blue of a CSS color in #rgb or #rrggbb form, in [0, 1]. */
 export function parseColor(color: string): [number, number, number] {
   let hex = color.trim().replace('#', '');
-  if (hex.length === 3) hex = [...hex].map((c) => c + c).join('');
+  if (hex.length === 3) hex = hex.replace(/./g, (c) => c + c);
   const value = parseInt(hex, 16);
   if (hex.length !== 6 || Number.isNaN(value)) return [0.12, 0.12, 0.13];
   return [((value >> 16) & 255) / 255, ((value >> 8) & 255) / 255, (value & 255) / 255];

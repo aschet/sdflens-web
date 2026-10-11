@@ -207,7 +207,7 @@ function readBinary(bytes: Uint8Array): { header: Header; z: Float32Array } {
   const text = (from: number, length: number): string =>
     latin1(bytes.subarray(from, from + length));
   // The manufacturer ends at the first NUL, which BCR allows and some ISO writers do as well.
-  const manufacturer = text(8, 10).split('\u0000', 1)[0]!.trimEnd();
+  const manufacturer = (text(8, 10).split('\u0000', 1)[0] ?? '').trimEnd();
   const created = text(18, 12);
   let at = 42;
   let columns: number;
@@ -309,7 +309,7 @@ const LINE_BREAK = /\r\n|\n|\r/;
 const TERMINATOR = /^[ \t]*\*[ \t]*$/;
 
 function readAscii(bytes: Uint8Array): { header: Header; z: Float32Array } {
-  const text = new TextDecoder('utf-8').decode(bytes).replace(/^﻿/, '');
+  const text = new TextDecoder('utf-8').decode(bytes).replace(/^\uFEFF/, '');
   const firstBreak = LINE_BREAK.exec(text);
   if (!firstBreak)
     throw new FormatError('The SDF file is missing the header and data records');

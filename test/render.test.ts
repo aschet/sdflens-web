@@ -137,13 +137,13 @@ describe('picking', () => {
     const vertices = Float32Array.from([-0.3, -0.3, 0, 0.3, -0.3, 0, 0, 0.3, 0]);
     const triangles = Uint32Array.from([0, 1, 2]);
     const projection = project(vertices, view, proj, 1, size, size);
-    const middle = [0, 1, 2].reduce(
+    const middle = [0, 1, 2].reduce<[number, number]>(
       (sum, i) => [
-        sum[0]! + (projection.x[i] as number) / 3,
-        sum[1]! + (projection.y[i] as number) / 3,
+        sum[0] + (projection.x[i] as number) / 3,
+        sum[1] + (projection.y[i] as number) / 3,
       ],
       [0, 0],
-    ) as [number, number];
+    );
     for (let corner = 0; corner < 3; corner++) {
       const x = middle[0] + 0.4 * ((projection.x[corner] as number) - middle[0]);
       const y = middle[1] + 0.4 * ((projection.y[corner] as number) - middle[1]);
