@@ -44,10 +44,10 @@ const colorbar = new Colorbar($<HTMLCanvasElement>("colorbar"));
 
 // ------------------------------------------------------------------------------------------------ theme
 
-function cssColors(): { background: string; foreground: string; muted: string; surface: string } {
+function cssColors(): { background: string; foreground: string; muted: string } {
   const style = getComputedStyle(document.documentElement);
   const read = (name: string): string => style.getPropertyValue(name).trim();
-  return { background: read("--stage"), foreground: read("--text"), muted: read("--muted"), surface: read("--surface") };
+  return { background: read("--stage"), foreground: read("--text"), muted: read("--muted") };
 }
 
 function applyColors(): void {
@@ -76,10 +76,14 @@ try {
   // Storage may be blocked.
 }
 window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", applyColors);
-$("themeButton").addEventListener("click", () => {
-  const dark = cssColors().surface !== "#ffffff";
-  setTheme(dark ? "light" : "dark");
-});
+/** The theme in use: the one chosen with the button, otherwise the one the system prefers. */
+function currentTheme(): "light" | "dark" {
+  const chosen = document.documentElement.dataset.theme;
+  if (chosen === "light" || chosen === "dark") return chosen;
+  return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+}
+
+$("themeButton").addEventListener("click", () => setTheme(currentTheme() === "dark" ? "light" : "dark"));
 
 // ------------------------------------------------------------------------------------------------ views
 
