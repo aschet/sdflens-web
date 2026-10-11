@@ -5,6 +5,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
+import { strToU8, strFromU8, unzipSync, zipSync } from "fflate";
 import { readFile } from "../src/formats";
 import { formatDate } from "../src/formats/info";
 
@@ -51,13 +52,13 @@ describe("file information", () => {
   });
 
   it("lists the fields of the instrument for both formats, with a dash for what a file does not give", () => {
-    const fields = ["Manufacturer", "Model", "Serial", "Version", "Probing type", "Probing identification", "Calibrated"];
+    const fields = ["Manufacturer", "Model", "Serial", "Version", "Probing", "Probing ID", "Calibration"];
     const sdf = info("iso2_surface_binary.sdf").Instrument as Record<string, string>;
     expect(Object.keys(sdf)).toEqual(fields);
-    expect(sdf).toMatchObject({ Manufacturer: "sdfio", Model: "-", Serial: "-", Calibrated: "-" });
+    expect(sdf).toMatchObject({ Manufacturer: "sdfio", Model: "-", Serial: "-", Calibration: "-" });
     const x3p = info("x3pio_surface_binary.x3p").Instrument as Record<string, string>;
     expect(Object.keys(x3p)).toEqual(fields);
-    expect(x3p).toMatchObject({ Manufacturer: "x3pio", Model: "tests/samples/generate.py", Serial: "-", Version: "1", "Probing type": "Software" });
+    expect(x3p).toMatchObject({ Manufacturer: "x3pio", Model: "tests/samples/generate.py", Serial: "-", Version: "1", Probing: "Software", "Probing ID": "synthetic data" });
   });
 
   it("shows the creation date in the file section for both formats, and who created it", () => {
@@ -91,6 +92,26 @@ describe("file information", () => {
   });
 
   it("shows a dash where a file has no date", () => {
-    expect(info("x3pio_surface_binary.x3p").Instrument).toMatchObject({ Calibrated: "-" });
+    expect(info("x3pio_surface_binary.x3p").Instrument).toMatchObject({ Calibration: "-" });
+  });
+
+  it("never fails because of a date", () => {
+    for (const text of ["9999-99-99T99:99", "2024-02-30 10:00", "2024-13-01 10:00", "0000-01-01 00:00", "2024-05-01T25:00:00Z", "+275760-09-13T00:00Z", "10:00"]) {
+      expect(() => formatDate(text)).not.toThrow();
+    }
+    expect(formatDate("2024-02-30 10:00")).toBeUndefined();
+    expect(formatDate("2024-05-01T25:00:00Z")).toBeUndefined();
+  });
+
+  it("loads a file whose dates cannot be read, showing a dash for them", () => {
+    const bytes = new Uint8Array(readFileSync(join(process.cwd(), "test", "samples", "x3pio_surface_binary.x3p")));
+    const files = unzipSync(bytes);
+    const xml = strFromU8(files["main.xml"] as Uint8Array).replace(/<Date>[^<]*<\/Date>/, "<Date>yesterday</Date>").replace(/<CalibrationDate>[^<]*<\/CalibrationDate>/, "<CalibrationDate>2024-99-99</CalibrationDate>");
+    files["main.xml"] = strToU8(xml);
+    const file = readFile(zipSync(files), "bad-dates.x3p");
+    const sections = Object.fromEntries(file.info.map((section) => [section.title, Object.fromEntries(section.rows)]));
+    expect(sections.File).toMatchObject({ Creation: "-" });
+    expect(sections.Instrument).toMatchObject({ Calibration: "-", Manufacturer: "x3pio" });
+    expect(file.layer(0).columns).toBeGreaterThan(0);
   });
 });

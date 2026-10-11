@@ -6,7 +6,7 @@
 
 import { FormatError, type InfoSection, type Surface, type SurfaceFile } from "../model";
 import { formatLength } from "../units";
-import { describeFile, featureOf, formatDate, sizeText, stepText } from "./info";
+import { describeFile, featureOf, formatDate, safely, sizeText, stepText } from "./info";
 
 type Dialect = "ISO-1.0" | "ISO-2.0" | "BCR-1.0";
 
@@ -78,7 +78,7 @@ export function readSdf(bytes: Uint8Array, name: string): SurfaceFile {
     x: null,
     y: null,
   };
-  return { format: "sdf", name, layerCount: 1, layer: () => surface, info: describe(header) };
+  return { format: "sdf", name, layerCount: 1, layer: () => surface, info: safely(() => describe(header)) };
 }
 
 function resolveDialect(text: string, magic: string): Dialect {

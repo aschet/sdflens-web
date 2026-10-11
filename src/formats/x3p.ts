@@ -6,7 +6,7 @@
 
 import { unzipSync } from "fflate";
 import { FormatError, type InfoSection, type Surface, type SurfaceFile } from "../model";
-import { describeFile, featureOf, formatDate, sizeText, stepText } from "./info";
+import { describeFile, featureOf, formatDate, safely, sizeText, stepText } from "./info";
 
 interface Axis {
   absolute: boolean;
@@ -113,7 +113,7 @@ export function readX3p(bytes: Uint8Array, name: string): SurfaceFile {
     name,
     layerCount: layers,
     layer,
-    info: describe({ root, record1, axesElement, cloud, columns, rows, x, y, z, binary: !!link }),
+    info: safely(() => describe({ root, record1, axesElement, cloud, columns, rows, x, y, z, binary: !!link })),
   };
 }
 
@@ -306,9 +306,9 @@ function describe(c: Context): InfoSection[] {
       Model: value("Instrument", "Model"),
       Serial: value("Instrument", "Serial"),
       Version: value("Instrument", "Version"),
-      "Probing type": value("ProbingSystem", "Type"),
-      "Probing identification": value("ProbingSystem", "Identification"),
-      Calibrated: formatDate(value("CalibrationDate")),
+      Probing: value("ProbingSystem", "Type"),
+      "Probing ID": value("ProbingSystem", "Identification"),
+      Calibration: formatDate(value("CalibrationDate")),
     },
     creation: formatDate(value("Date")),
     source: [

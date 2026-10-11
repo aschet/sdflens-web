@@ -29,7 +29,7 @@ export interface Description {
   source: [string, string | undefined][];
 }
 
-export const INSTRUMENT_FIELDS = ["Manufacturer", "Model", "Serial", "Version", "Probing type", "Probing identification", "Calibrated"] as const;
+export const INSTRUMENT_FIELDS = ["Manufacturer", "Model", "Serial", "Version", "Probing", "Probing ID", "Calibration"] as const;
 export type InstrumentField = (typeof INSTRUMENT_FIELDS)[number];
 
 const PLACEHOLDER = /^(n\/a|not available|not set|none|unknown|-)?$/i;
@@ -58,22 +58,37 @@ const DATE = /^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2})(?::\d{2}(?:\.\d+)?)?\s
 /**
  * A date written in the locale of the system and in its time zone. A date with a time zone, such as UTC, is
  * converted; a date without one is local time already and stays as it is. Text that is not a date, such as a
- * placeholder, gives undefined.
+ * placeholder, gives undefined. A date that cannot be read is no reason to fail: it gives undefined as well.
  */
 export function formatDate(text: string | undefined, locale?: string, timeZone?: string): string | undefined {
   if (isPlaceholder(text)) return undefined;
   const m = DATE.exec((text as string).trim());
   if (!m) return undefined;
   const [year, month, day, hour, minute] = m.slice(1, 6).map(Number) as [number, number, number, number, number];
-  let date: Date;
-  if (m[6] === undefined) {
-    date = new Date(year, month - 1, day, hour, minute);
-  } else {
-    const zone = m[6] === "Z" ? "Z" : /^[+-]\d{2}$/.test(m[6]) ? `${m[6]}:00` : m[6].replace(/^([+-]\d{2})(\d{2})$/, "$1:$2");
-    date = new Date(`${m[1]}-${m[2]}-${m[3]}T${m[4]}:${m[5]}:00${zone}`);
+  try {
+    let date: Date;
+    if (m[6] === undefined) {
+      date = new Date(year, month - 1, day, hour, minute);
+      // A day or a time that does not exist, such as the 30th of February, rolls over; it is not a date.
+      if (date.getMonth() !== month - 1 || date.getDate() !== day || hour > 23 || minute > 59) return undefined;
+    } else {
+      const zone = m[6] === "Z" ? "Z" : /^[+-]\d{2}$/.test(m[6]) ? `${m[6]}:00` : m[6].replace(/^([+-]\d{2})(\d{2})$/, "$1:$2");
+      date = new Date(`${m[1]}-${m[2]}-${m[3]}T${m[4]}:${m[5]}:00${zone}`);
+    }
+    if (Number.isNaN(date.getTime())) return undefined;
+    return new Intl.DateTimeFormat(locale, { dateStyle: "medium", timeStyle: "short", timeZone }).format(date);
+  } catch {
+    return undefined;
   }
-  if (Number.isNaN(date.getTime())) return undefined;
-  return new Intl.DateTimeFormat(locale, { dateStyle: "medium", timeStyle: "short", timeZone }).format(date);
+}
+
+/** The information about a file is never worth failing to open it: if it cannot be built, there is none. */
+export function safely(build: () => InfoSection[]): InfoSection[] {
+  try {
+    return build();
+  } catch {
+    return [];
+  }
 }
 
 export function describeFile(d: Description): InfoSection[] {
