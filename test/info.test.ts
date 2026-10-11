@@ -60,9 +60,13 @@ describe("file information", () => {
     expect(x3p).toMatchObject({ Manufacturer: "x3pio", Model: "tests/samples/generate.py", Serial: "-", Version: "1", "Probing type": "Software" });
   });
 
-  it("lists where the data comes from, with the dates written the same way", () => {
-    expect(info("iso2_surface_binary.sdf").Source).toMatchObject({ Created: "2026-01-01 12:00 UTC" });
-    expect(info("x3pio_surface_binary.x3p").Source).toMatchObject({ Creator: "x3pio sample generator", Created: "2026-01-01 12:00 UTC" });
+  it("shows the creation date in the file section for both formats, and who created it", () => {
+    expect(info("iso2_surface_binary.sdf").File).toMatchObject({ Creation: "2026-01-01 12:00 UTC" });
+    expect(info("x3pio_surface_binary.x3p").File).toMatchObject({ Creation: "2026-01-01 12:00 UTC" });
+    expect(info("x3pio_surface_binary.x3p").Source).toMatchObject({ Creator: "x3pio sample generator" });
+    // An SDF file has no creator or comment, so it has no such section, and the modification date is not shown.
+    expect(info("iso2_surface_binary.sdf")).not.toHaveProperty("Source");
+    expect(JSON.stringify(info("iso2_surface_binary.sdf"))).not.toContain("Modified");
   });
 
   it("formats dates and leaves out placeholders", () => {

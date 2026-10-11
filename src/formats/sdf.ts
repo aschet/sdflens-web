@@ -47,7 +47,6 @@ interface Header {
   binary: boolean;
   manufacturer: string;
   created: string;
-  modified: string;
   columns: number;
   rows: number;
   xScale: number;
@@ -137,7 +136,6 @@ function readBinary(bytes: Uint8Array): { header: Header; z: Float32Array } {
   // The manufacturer ends at the first NUL, which BCR allows and some ISO writers do as well.
   const manufacturer = text(8, 10).split("\u0000", 1)[0]!.trimEnd();
   const created = text(18, 12);
-  const modified = text(30, 12);
   let at = 42;
   let columns: number;
   let rows: number;
@@ -169,7 +167,6 @@ function readBinary(bytes: Uint8Array): { header: Header; z: Float32Array } {
   const header: Header = {
     dialect, binary: true, manufacturer,
     created: formatDate(created, dialect === "ISO-2.0"),
-    modified: formatDate(modified, dialect === "ISO-2.0"),
     columns, rows, xScale, yScale, zScale, zResolution, type,
   };
   return { header, z };
@@ -260,7 +257,6 @@ function readAscii(bytes: Uint8Array): { header: Header; z: Float32Array } {
     dialect, binary: false,
     manufacturer: field("ManufacID").trim(),
     created: formatDate(field("CreateDate"), dialect === "ISO-2.0"),
-    modified: formatDate(field("ModDate"), dialect === "ISO-2.0"),
     columns, rows, xScale: float("Xscale"), yScale: float("Yscale"), zScale, zResolution: float("Zresolution"), type,
   };
   const z = parseAsciiData(dataText, header, type, dialect);
@@ -362,10 +358,8 @@ function describe(header: Header): InfoSection[] {
     step: stepText(feature, header.xScale, header.yScale),
     resolution: header.zResolution < 0 ? undefined : formatLength(header.zResolution),
     // An SDF file names only the manufacturer.
+    creation: header.created,
     instrument: { Manufacturer: header.manufacturer },
-    source: [
-      ["Created", header.created],
-      ["Modified", header.modified],
-    ],
+    source: [],
   });
 }

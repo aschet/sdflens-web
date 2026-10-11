@@ -14,6 +14,8 @@ export interface Description {
   format: string;
   revision: string;
   feature: Feature;
+  /** When the data was generated, as text; undefined if the file does not say. */
+  creation?: string;
   size: string;
   /** The distance between points of a regular grid. */
   step?: string;
@@ -68,6 +70,7 @@ export function describeFile(d: Description): InfoSection[] {
       ["Format", d.format],
       ["Revision", d.revision],
       ["Feature", d.feature],
+      ["Creation", isPlaceholder(d.creation) ? "-" : (d.creation as string)],
     ],
   };
   const data: InfoSection = { title: "Data", rows: [["Size", d.size]] };

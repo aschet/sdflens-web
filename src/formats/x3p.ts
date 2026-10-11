@@ -310,9 +310,9 @@ function describe(c: Context): InfoSection[] {
       "Probing identification": value("ProbingSystem", "Identification"),
       Calibrated: formatDate(value("CalibrationDate")),
     },
+    creation: formatDate(value("Date")),
     source: [
       ["Creator", value("Creator")],
-      ["Created", formatDate(value("Date"))],
       ["Comment", value("Comment")],
     ],
   });
