@@ -110,7 +110,8 @@ export function describeFile(d: Description): InfoSection[] {
   if (d.step) data.rows.push(["Step", d.step]);
   if (d.positions) data.rows.push(["Positions", d.positions]);
   const given = (value: string | undefined): string => (isPlaceholder(value) ? "-" : (value as string));
-  data.rows.push(["X type", given(d.types.x)], ["Y type", given(d.types.y)], ["Z type", given(d.types.z)]);
+  const types = (["x", "y", "z"] as const).filter((axis) => d.types[axis]).map((axis) => `${axis} ${d.types[axis]}`);
+  data.rows.push(["Type", types.length > 0 ? types.join(", ") : "-"]);
   if (d.resolution) data.rows.push(["Height resolution", d.resolution]);
   if (d.placement) data.rows.push(["Placement", d.placement]);
   const instrument: InfoSection = { title: "Instrument", rows: INSTRUMENT_FIELDS.map((field): [string, string] => [field, given(d.instrument[field])]) };
