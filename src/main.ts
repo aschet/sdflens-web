@@ -381,17 +381,20 @@ function renderInfo(): void {
 
 const isHidden = (id: string): boolean => $(id).hidden !== false;
 
-function setPanel(id: "display" | "drawer", open: boolean): void {
-  const panel = $(id);
-  panel.hidden = !open;
-  const button = $(id === "display" ? "displayButton" : "infoButton");
-  button.setAttribute("aria-expanded", String(open));
-  if (open && id === "display") $("drawer").hidden = true, $("infoButton").setAttribute("aria-expanded", "false");
-  if (open && id === "drawer") $("display").hidden = true, $("displayButton").setAttribute("aria-expanded", "false");
+const PANELS = { display: "displayButton", drawer: "infoButton", about: "aboutButton" } as const;
+
+/** Shows or hides a panel; only one is open at a time. */
+function setPanel(id: keyof typeof PANELS, open: boolean): void {
+  for (const [name, button] of Object.entries(PANELS)) {
+    const show = name === id && open;
+    $(name).hidden = !show;
+    $(button).setAttribute("aria-expanded", String(show));
+  }
 }
 
 $("displayButton").addEventListener("click", () => setPanel("display", isHidden("display")));
 $("infoButton").addEventListener("click", () => setPanel("drawer", isHidden("drawer")));
+$("aboutButton").addEventListener("click", () => setPanel("about", isHidden("about")));
 
 // ---------------------------------------------------------------------------------------------- display
 

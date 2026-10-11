@@ -10,7 +10,7 @@
 <body>
 <div id="app" data-state="empty" data-view="3d">
   <header class="bar">
-    <div class="brand" aria-label="sdflens web"><svg viewBox="0 0 32 32" width="22" height="22" aria-hidden="true"><rect width="32" height="32" rx="7" fill="currentColor"/><path d="M4 22c4-10 7-10 10-4s6 6 14-8" fill="none" stroke="var(--surface)" stroke-width="3" stroke-linecap="round"/></svg><span>sdflens</span></div>
+    <button id="aboutButton" class="brand" type="button" aria-expanded="false" aria-controls="about" title="About" aria-label="About sdflens web"><svg viewBox="0 0 32 32" width="22" height="22" aria-hidden="true"><rect width="32" height="32" rx="7" fill="currentColor"/><path d="M4 22c4-10 7-10 10-4s6 6 14-8" fill="none" stroke="var(--surface)" stroke-width="3" stroke-linecap="round"/></svg><span>sdflens</span></button>
     <div id="fileName" class="file-name" title=""></div>
     <div class="segmented views" role="tablist" aria-label="View">
       <button role="tab" data-view="3d" aria-selected="true" title="3D view" aria-label="3D view"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M12 3l8 4.5v9L12 21l-8-4.5v-9zM12 12l8-4.5M12 12v9M12 12L4 7.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/></svg></button>
@@ -99,14 +99,15 @@
     </div>
   </aside>
 
+  <aside id="about" class="popover about" hidden aria-label="About">
+    <strong>sdflens web</strong>
+    <span>© 2026 Thomas Ascher</span>
+    <span>Licensed under the <a href="https://github.com/aschet/sdflens-web/blob/main/LICENSE" target="_blank" rel="noopener">GPL-3.0-or-later</a></span>
+    <span><a href="https://github.com/aschet/sdflens-web" target="_blank" rel="noopener">Source code</a> · <a href="https://github.com/aschet/sdflens-web/blob/main/THIRD-PARTY-NOTICES.txt" target="_blank" rel="noopener">Third-party notices</a></span>
+  </aside>
+
   <aside id="drawer" class="drawer" hidden aria-label="File information">
     <div id="infoBody" class="drawer-body"></div>
-    <footer class="drawer-foot">
-      <strong>sdflens web</strong>
-      <span>© 2026 Thomas Ascher</span>
-      <span>Licensed under the <a href="https://github.com/aschet/sdflens-web/blob/main/LICENSE" target="_blank" rel="noopener">GPL-3.0-or-later</a></span>
-      <span><a href="https://github.com/aschet/sdflens-web" target="_blank" rel="noopener">Source code</a> · <a href="https://github.com/aschet/sdflens-web/blob/main/THIRD-PARTY-NOTICES.txt" target="_blank" rel="noopener">Third-party notices</a></span>
-    </footer>
   </aside>
 
   <input id="fileInput" type="file" accept=".sdf,.x3p,application/zip" hidden>
