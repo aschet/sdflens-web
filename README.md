@@ -17,7 +17,7 @@ Online: <https://aschet.github.io/sdflens-web/>
 - 3D view (WebGL 2) with the render modes surface, grid and points, a height scale and colormaps.
 - 2D height map and profile view, which stay fast for large grids.
 - Click, tap or hover reads the position and height of a point.
-- Mouse, touch (drag, pinch) and keyboard; light and dark theme; the layout follows the screen size.
+- Mouse and touch (drag, pinch); light and dark theme; the layout follows the screen size.
 - File information, and the view as PNG.
 
 Not supported: SDF with compression or checksums, as in [sdfio](https://github.com/aschet/sdfio), and the placement

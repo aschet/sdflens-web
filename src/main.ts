@@ -399,7 +399,6 @@ function setPanel(id: "display" | "drawer", open: boolean): void {
 $("displayButton").addEventListener("click", () => setPanel("display", isHidden("display")));
 $("infoButton").addEventListener("click", () => setPanel("drawer", isHidden("drawer")));
 $("drawerClose").addEventListener("click", () => setPanel("drawer", false));
-$("shortcuts").addEventListener("click", () => ($("shortcutDialog") as HTMLDialogElement).showModal());
 
 // ---------------------------------------------------------------------------------------------- display
 
@@ -578,43 +577,5 @@ for (const sample of SAMPLES) {
   });
   $("sampleList").append(button);
 }
-
-// -------------------------------------------------------------------------------------------- keyboard
-
-window.addEventListener("keydown", (event) => {
-  const target = event.target as HTMLElement;
-  if (event.ctrlKey || event.metaKey || event.altKey || ["INPUT", "SELECT", "TEXTAREA"].includes(target.tagName)) {
-    if (!(target.tagName === "INPUT" && (target as HTMLInputElement).type === "range" && event.key.startsWith("Arrow"))) return;
-  }
-  if (!state.file) {
-    if (event.key.toLowerCase() === "o") choose();
-    return;
-  }
-  const step = (delta: number): void => {
-    const count = Number(($("profileSlider") as HTMLInputElement).max);
-    state.profileIndex = Math.min(Math.max(state.profileIndex + delta, 0), count - 1);
-    updateProfile();
-  };
-  switch (event.key) {
-    case "1": setView("3d"); break;
-    case "2": setView("2d"); break;
-    case "3": setView("profile"); break;
-    case "o": case "O": choose(); break;
-    case "h": case "H": activeView()?.home(); break;
-    case "r": case "R": state.tool = "rotate"; updateTools(); break;
-    case "p": case "P": state.tool = "pan"; updateTools(); break;
-    case "z": case "Z": state.tool = "zoom"; updateTools(); break;
-    case "+": case "=": activeView()?.zoomIn(); break;
-    case "-": case "_": activeView()?.zoomOut(); break;
-    case "[": stepLayer(-1); break;
-    case "]": stepLayer(1); break;
-    case "i": case "I": setPanel("drawer", isHidden("drawer")); break;
-    case "ArrowLeft": if (state.view === "profile") step(-1); break;
-    case "ArrowRight": if (state.view === "profile") step(1); break;
-    case "Escape": setPanel("drawer", false); setPanel("display", false); break;
-    default: return;
-  }
-  if (!(target.tagName === "INPUT")) event.preventDefault();
-});
 
 applyColors();

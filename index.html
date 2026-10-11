@@ -13,14 +13,14 @@
     <div class="brand" aria-label="sdflens web"><svg viewBox="0 0 32 32" width="22" height="22" aria-hidden="true"><rect width="32" height="32" rx="7" fill="currentColor"/><path d="M4 22c4-10 7-10 10-4s6 6 14-8" fill="none" stroke="var(--surface)" stroke-width="3" stroke-linecap="round"/></svg><span>sdflens</span></div>
     <div id="fileName" class="file-name" title=""></div>
     <div class="segmented views" role="tablist" aria-label="View">
-      <button role="tab" data-view="3d" aria-selected="true" title="3D view (1)" aria-label="3D view"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M12 3l8 4.5v9L12 21l-8-4.5v-9zM12 12l8-4.5M12 12v9M12 12L4 7.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/></svg></button>
-      <button role="tab" data-view="2d" aria-selected="false" title="2D view (2)" aria-label="2D view"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M4 9.3h16M4 14.7h16M9.3 4v16M14.7 4v16" stroke="currentColor" stroke-width="1.4" opacity=".55"/><rect x="9.8" y="9.8" width="4.4" height="4.4" fill="currentColor" opacity=".5"/><rect x="14.7" y="4.9" width="4.4" height="4.4" fill="currentColor" opacity=".3"/><rect x="4.9" y="14.7" width="4.4" height="4.4" fill="currentColor" opacity=".3"/></svg></button>
-      <button role="tab" data-view="profile" aria-selected="false" title="Profile view (3)" aria-label="Profile view"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M4 4v16h16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M7 15.5c1.8-6 3.2-6 5-1.2s3.4 3.6 6-5.8" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
+      <button role="tab" data-view="3d" aria-selected="true" title="3D view" aria-label="3D view"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M12 3l8 4.5v9L12 21l-8-4.5v-9zM12 12l8-4.5M12 12v9M12 12L4 7.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/></svg></button>
+      <button role="tab" data-view="2d" aria-selected="false" title="2D view" aria-label="2D view"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M4 9.3h16M4 14.7h16M9.3 4v16M14.7 4v16" stroke="currentColor" stroke-width="1.4" opacity=".55"/><rect x="9.8" y="9.8" width="4.4" height="4.4" fill="currentColor" opacity=".5"/><rect x="14.7" y="4.9" width="4.4" height="4.4" fill="currentColor" opacity=".3"/><rect x="4.9" y="14.7" width="4.4" height="4.4" fill="currentColor" opacity=".3"/></svg></button>
+      <button role="tab" data-view="profile" aria-selected="false" title="Profile view" aria-label="Profile view"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M4 4v16h16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M7 15.5c1.8-6 3.2-6 5-1.2s3.4 3.6 6-5.8" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
     </div>
     <div class="actions">
-      <button id="openButton" class="button primary icon" title="Open a file (O)" aria-label="Open a file"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      <button id="openButton" class="button primary icon" title="Open a file" aria-label="Open a file"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
       <button id="displayButton" class="button icon" aria-expanded="false" aria-controls="display" title="Display: colors, render mode and height scale" aria-label="Display options"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M4 7h9M17 7h3M4 17h3M11 17h9" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><circle cx="15" cy="7" r="2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><circle cx="9" cy="17" r="2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
-      <button id="infoButton" class="button icon" aria-expanded="false" aria-controls="drawer" title="File information (I)" aria-label="File information"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 11v6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="7.6" r="1.1" fill="currentColor"/></svg></button>
+      <button id="infoButton" class="button icon" aria-expanded="false" aria-controls="drawer" title="File information" aria-label="File information"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 11v6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="7.6" r="1.1" fill="currentColor"/></svg></button>
       <button id="shotButton" class="button icon" title="Save the view as an image" aria-label="Save the view as an image"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="1.8"/></svg></button>
       <button id="themeButton" class="button icon" title="Switch between light and dark" aria-label="Switch between light and dark"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4 8 8 0 1 0 20 14.5z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg></button>
     </div>
@@ -32,19 +32,19 @@
     <div id="viewProfile" class="view" hidden></div>
 
     <div class="tools floating" id="tools" role="toolbar" aria-label="View tools">
-      <button class="tool" data-tool="rotate" aria-pressed="true" title="Rotate (R)" aria-label="Rotate"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M20 12a8 8 0 1 1-3-6.2M20 4v5h-5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
-      <button class="tool" data-tool="pan" aria-pressed="false" title="Pan (P)" aria-label="Pan"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M12 3v18M3 12h18M12 3l-3 3M12 3l3 3M12 21l-3-3M12 21l3-3M3 12l3-3M3 12l3 3M21 12l-3-3M21 12l-3 3" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
-      <button class="tool" data-tool="zoom" aria-pressed="false" title="Zoom by dragging (Z)" aria-label="Zoom"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M15 15l5.5 5.5M8 10.5h5M10.5 8v5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
+      <button class="tool" data-tool="rotate" aria-pressed="true" title="Rotate" aria-label="Rotate"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M20 12a8 8 0 1 1-3-6.2M20 4v5h-5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      <button class="tool" data-tool="pan" aria-pressed="false" title="Pan" aria-label="Pan"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M12 3v18M3 12h18M12 3l-3 3M12 3l3 3M12 21l-3-3M12 21l3-3M3 12l3-3M3 12l3 3M21 12l-3-3M21 12l-3 3" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      <button class="tool" data-tool="zoom" aria-pressed="false" title="Zoom by dragging" aria-label="Zoom"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M15 15l5.5 5.5M8 10.5h5M10.5 8v5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
       <span class="rule"></span>
-      <button class="tool" id="zoomInButton" title="Zoom in (+)" aria-label="Zoom in"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
-      <button class="tool" id="zoomOutButton" title="Zoom out (-)" aria-label="Zoom out"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M5 12h14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
-      <button class="tool" id="homeButton" title="Fit to the view (H)" aria-label="Fit to the view"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      <button class="tool" id="zoomInButton" title="Zoom in" aria-label="Zoom in"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
+      <button class="tool" id="zoomOutButton" title="Zoom out" aria-label="Zoom out"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M5 12h14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
+      <button class="tool" id="homeButton" title="Fit to the view" aria-label="Fit to the view"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
     </div>
 
     <div class="stepper floating" id="layerBar" hidden>
-      <button id="layerPrev" aria-label="Previous layer" title="Previous layer ([)">‹</button>
+      <button id="layerPrev" aria-label="Previous layer" title="Previous layer">‹</button>
       <span id="layerLabel">Layer 1 / 1</span>
-      <button id="layerNext" aria-label="Next layer" title="Next layer (])">›</button>
+      <button id="layerNext" aria-label="Next layer" title="Next layer">›</button>
     </div>
 
     <div class="profile-bar floating" id="profileBar" hidden>
@@ -95,23 +95,8 @@
   <aside id="drawer" class="drawer" hidden aria-label="File information">
     <div class="drawer-head"><h2>Information</h2><button id="drawerClose" class="button icon" aria-label="Close the information">✕</button></div>
     <div id="infoBody" class="drawer-body"></div>
-    <footer class="drawer-foot"><a href="https://github.com/aschet/sdflens-web" target="_blank" rel="noopener">sdflens web</a> · GPL-3.0-or-later · <button id="shortcuts" class="link" type="button">Keyboard shortcuts</button></footer>
+    <footer class="drawer-foot"><a href="https://github.com/aschet/sdflens-web" target="_blank" rel="noopener">sdflens web</a> · GPL-3.0-or-later</footer>
   </aside>
-
-  <dialog id="shortcutDialog">
-    <h2>Keyboard shortcuts</h2>
-    <dl class="keys">
-      <dt>1 2 3</dt><dd>3D, 2D and profile view</dd>
-      <dt>O</dt><dd>Open a file</dd>
-      <dt>H</dt><dd>Fit the view</dd>
-      <dt>R P Z</dt><dd>Rotate, pan and zoom tool</dd>
-      <dt>+ −</dt><dd>Zoom in and out</dd>
-      <dt>[ ]</dt><dd>Previous and next layer</dd>
-      <dt>← →</dt><dd>Previous and next profile</dd>
-      <dt>I</dt><dd>File information</dd>
-    </dl>
-    <form method="dialog"><button class="button primary">Close</button></form>
-  </dialog>
 
   <input id="fileInput" type="file" accept=".sdf,.x3p,application/zip" hidden>
 </div>
