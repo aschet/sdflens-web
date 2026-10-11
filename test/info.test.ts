@@ -43,7 +43,7 @@ describe("file information", () => {
 
   it("combines size and step, and does not repeat the layers, which have their own switch", () => {
     const surface = info("iso2_surface_binary.sdf");
-    expect(surface.Data).toMatchObject({ Size: "48 × 32 points", Step: "2 µm × 3 µm", "Data type": "int16, factor 1e-10" });
+    expect(surface.Data).toMatchObject({ Size: "48 × 32 points", Step: "2 µm × 3 µm" });
     expect(surface.File).not.toHaveProperty("Layers");
     expect(info("x3pio_surface_layers_binary.x3p").File).not.toHaveProperty("Layers");
     expect(info("iso1_profile_binary.sdf").Data).toMatchObject({ Size: "128 points", Step: "2 µm" });

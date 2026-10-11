@@ -6,7 +6,7 @@
 
 import { FormatError, type InfoSection, type Surface, type SurfaceFile } from "../model";
 import { formatLength } from "../units";
-import { describeFile, featureOf, g, sizeText, stepText } from "./info";
+import { describeFile, featureOf, sizeText, stepText } from "./info";
 
 type Dialect = "ISO-1.0" | "ISO-2.0" | "BCR-1.0";
 
@@ -360,7 +360,6 @@ function describe(header: Header): InfoSection[] {
     feature,
     size: sizeText(feature, header.columns, header.rows),
     step: stepText(feature, header.xScale, header.yScale),
-    dataType: `${header.type.name}, factor ${g(header.zScale)}`,
     resolution: header.zResolution < 0 ? undefined : formatLength(header.zResolution),
     source: [
       ["Manufacturer", header.manufacturer],

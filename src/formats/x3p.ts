@@ -6,7 +6,7 @@
 
 import { unzipSync } from "fflate";
 import { FormatError, type InfoSection, type Surface, type SurfaceFile } from "../model";
-import { describeFile, featureOf, formatDate, g, isPlaceholder, sizeText, stepText } from "./info";
+import { describeFile, featureOf, formatDate, isPlaceholder, sizeText, stepText } from "./info";
 
 interface Axis {
   absolute: boolean;
@@ -25,7 +25,6 @@ const TYPES: Record<string, FieldType> = {
   F: { size: 4, read: (view, offset) => view.getFloat32(offset, true) },
   D: { size: 8, read: (view, offset) => view.getFloat64(offset, true) },
 };
-const TYPE_NAMES: Record<string, string> = { I: "int16", L: "int32", F: "float32", D: "float64" };
 
 type Files = Map<string, Uint8Array>;
 
@@ -280,10 +279,6 @@ interface Context {
   binary: boolean;
 }
 
-function axisType(axis: Axis): string {
-  return `${TYPE_NAMES[axis.type]}${axis.increment === 1 ? "" : `, factor ${g(axis.increment)}`}`;
-}
-
 function describe(c: Context): InfoSection[] {
   const feature = featureOf(c.cloud, c.rows);
   const regular = !c.x.absolute && !c.y.absolute;
@@ -309,7 +304,6 @@ function describe(c: Context): InfoSection[] {
     size: sizeText(feature, c.columns, c.rows),
     step: regular ? stepText(feature, Math.abs(c.x.increment), Math.abs(c.y.increment)) : undefined,
     positions: regular ? undefined : "stored for every point",
-    dataType: regular ? axisType(c.z) : `x ${axisType(c.x)}, y ${axisType(c.y)}, z ${axisType(c.z)}`,
     placement: turned || offsets.some((offset) => offset !== 0) ? "stored in the file, not applied" : undefined,
     source: [
       ["Manufacturer", value("Instrument", "Manufacturer")],

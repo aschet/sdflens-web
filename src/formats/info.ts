@@ -19,7 +19,6 @@ export interface Description {
   step?: string;
   /** Says how the points of an irregular grid or of a cloud are positioned. */
   positions?: string;
-  dataType: string;
   resolution?: string;
   placement?: string;
   /** Where the data comes from; the entries without a value are left out. */
@@ -47,11 +46,6 @@ export function stepText(feature: Feature, stepX: number, stepY: number): string
   return feature === "Surface" ? `${formatLength(stepX)} × ${formatLength(stepY)}` : formatLength(stepX);
 }
 
-/** A number with at most ten significant digits. */
-export function g(value: number): string {
-  return String(Number(value.toPrecision(10)));
-}
-
 /** A date as "2026-01-01 12:00 UTC"; a text that is not a date, such as a placeholder, gives undefined. */
 export function formatDate(text: string | undefined): string | undefined {
   if (isPlaceholder(text)) return undefined;
@@ -74,7 +68,6 @@ export function describeFile(d: Description): InfoSection[] {
   const data: InfoSection = { title: "Data", rows: [["Size", d.size]] };
   if (d.step) data.rows.push(["Step", d.step]);
   if (d.positions) data.rows.push(["Positions", d.positions]);
-  data.rows.push(["Data type", d.dataType]);
   if (d.resolution) data.rows.push(["Height resolution", d.resolution]);
   if (d.placement) data.rows.push(["Placement", d.placement]);
   const sections = [file, data];
