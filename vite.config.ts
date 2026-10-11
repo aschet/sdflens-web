@@ -10,5 +10,13 @@ export default defineConfig({
   base: './',
   plugins: [viteSingleFile()],
   build: { target: 'es2022' },
-  test: { environment: 'happy-dom', include: ['test/**/*.test.ts'] },
+  test: {
+    environment: 'happy-dom',
+    include: ['test/**/*.test.ts'],
+    coverage: {
+      provider: 'v8',
+      include: ['src/**/*.ts'],
+      reporter: ['text', 'lcov'],
+    },
+  },
 });

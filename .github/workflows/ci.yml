@@ -18,23 +18,51 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  check:
-    name: Type check, test and build
+  lint:
+    name: Lint and type check
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
         with:
-          node-version: '24'
+          node-version: 24
           cache: npm
       - run: npm ci
-      - name: Type check
+      - name: ESLint
+        run: npm run lint
+      - name: Prettier
+        run: npm run format:check
+      - name: TypeScript
         run: npm run typecheck
-      - name: Test
-        run: npm test
-      - name: Build
-        run: npm run build
+
+  test:
+    name: Test on Node ${{ matrix.node-version }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: [22, 24]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - run: npm run test:coverage
+
+  compliance:
+    name: Audit and REUSE
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
       - name: Audit
         run: npm audit --omit=dev
-      - name: Reuse
+      - name: REUSE
         run: pipx run reuse lint

@@ -14,14 +14,17 @@ files.
 
 ## Development
 
-Node.js 20 or newer.
+Node.js 22.12 or newer.
 
 ```sh
 npm ci
 npm run dev        # development server
 npm test           # unit tests and the sample files
+npm run lint       # ESLint
+npm run format     # Prettier
 npm run typecheck
 npm run build      # dist/index.html
+npm run check      # lint, format, type check, build and tests with coverage
 ```
 
 The code is TypeScript without a framework. `src/formats` has the readers, `src/render` the views and the
