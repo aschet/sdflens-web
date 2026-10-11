@@ -98,7 +98,7 @@ describe('layers and positions', () => {
         `<DataList>${data.map((d) => `<Datum>${d}</Datum>`).join('')}</DataList></Record3></ISO5436_2>`;
       return zipSync({ 'main.xml': strToU8(xml) });
     };
-    const junk = ['1e-4;1e-7', '-9e303;2e-7', '8e-308;3e-7', '5e-300;4e-7'];
+    const junk = ['1e-4;1e-7', '-9e303;2e-7', '8e30;3e-7', '5e-300;4e-7'];
     // Garbage across the profile does not matter.
     const across = readFile(profile(incremental, absolute, junk), 'a.x3p').layer(0);
     expect(across.x).toBeNull();

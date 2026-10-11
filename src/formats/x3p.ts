@@ -345,6 +345,11 @@ function profileAxis(layout: Layout): 'x' | 'y' | null {
   return null;
 }
 
+/** Whether a number can be a position in meters: a damaged file may hold any number. */
+function plausible(value: number): boolean {
+  return Number.isFinite(value) && Math.abs(value) < 1e3;
+}
+
 type ProfileStep =
   { step: number; assumed: boolean } | { irregular: true; descending: boolean } | null;
 
@@ -368,8 +373,13 @@ function profileStep(
     let even = true;
     for (let i = 1; monotonic && i < count; i++) {
       const gap = (positions[i] as number) - (positions[i - 1] as number);
-      if (!Number.isFinite(gap) || gap * mean <= 0) monotonic = false;
-      else if (Math.abs(gap - mean) > 0.02 * Math.abs(mean)) even = false;
+      if (
+        !plausible(positions[i] as number) ||
+        !Number.isFinite(gap) ||
+        gap * mean <= 0
+      ) {
+        monotonic = false;
+      } else if (Math.abs(gap - mean) > 0.02 * Math.abs(mean)) even = false;
     }
     if (monotonic)
       return even
@@ -436,7 +446,7 @@ function toSurface(arrays: Map<string, Float32Array>, layout: Layout): Surface {
     const across = arrays.get(along === 'x' ? 'y' : 'x');
     const diagonal =
       across !== undefined &&
-      across.every(Number.isFinite) &&
+      across.every(plausible) &&
       across.some((value) => value !== across[0]);
     if (found && 'step' in found && !diagonal) {
       // Only the axis along the profile matters; the other has a single position.
