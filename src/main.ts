@@ -555,10 +555,15 @@ function showReadout(text: string): void {
     return;
   }
   const { extent } = state;
+  const axes = ["x"];
   const sizes = extent ? [extent.x[1] - extent.x[0]] : [];
-  if (extent && (s.kind === "cloud" || s.rows > 1)) sizes.push(extent.y[1] - extent.y[0]);
+  if (extent && (s.kind === "cloud" || s.rows > 1)) {
+    axes.push("y");
+    sizes.push(extent.y[1] - extent.y[0]);
+  }
+  axes.push("z");
   sizes.push(stats.max - stats.min);
-  element.textContent = formatExtent(sizes);
+  element.textContent = `${axes.join(" × ")}: ${formatExtent(sizes)}`;
 }
 
 // ------------------------------------------------------------------------------------------ opening files
