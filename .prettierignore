@@ -1,0 +1,8 @@
+coverage/
+dist/
+node_modules/
+package-lock.json
+# Generated, or laid out by hand
+src/colormapData.ts
+test/expected.json
+index.html
