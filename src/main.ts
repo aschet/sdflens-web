@@ -402,7 +402,6 @@ function setPanel(id: "display" | "drawer", open: boolean): void {
 
 $("displayButton").addEventListener("click", () => setPanel("display", isHidden("display")));
 $("infoButton").addEventListener("click", () => setPanel("drawer", isHidden("drawer")));
-$("drawerClose").addEventListener("click", () => setPanel("drawer", false));
 
 // ---------------------------------------------------------------------------------------------- display
 

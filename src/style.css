@@ -672,20 +672,7 @@ input[type="range"] {
   border-left: 1px solid var(--border);
   box-shadow: var(--shadow);
   display: grid;
-  grid-template-rows: auto 1fr auto;
-}
-
-.drawer-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 10px 14px;
-  border-bottom: 1px solid var(--border);
-}
-
-.drawer-head h2 {
-  font-size: 15px;
-  margin: 0;
+  grid-template-rows: 1fr auto;
 }
 
 .drawer-body {
