@@ -50,10 +50,10 @@ describe("file information", () => {
     expect(info("x3pio_surface_irregular_binary.x3p").Data).toMatchObject({ Positions: "stored for every point" });
   });
 
-  it("names the data type of each axis in one row as x, y, z, the same way for SDF and x3p", () => {
+  it("names the data type of each axis in one row, the same way for SDF and x3p", () => {
     // An SDF file stores only the heights; its lateral axes are given by the steps.
-    expect(info("iso2_surface_binary.sdf").Data).toMatchObject({ Type: "-, -, int16" });
-    expect(info("iso2_surface_binary32_ascii.sdf").Data).toMatchObject({ Type: "-, -, float32" });
+    expect(info("iso2_surface_binary.sdf").Data).toMatchObject({ Type: "int16" });
+    expect(info("iso2_surface_binary32_ascii.sdf").Data).toMatchObject({ Type: "float32" });
     expect(info("x3pio_surface_binary.x3p").Data).toMatchObject({ Type: "float64, float64, int16" });
     expect(info("x3pio_point_cloud_binary.x3p").Data).toMatchObject({ Type: "float32, float32, float32" });
   });
