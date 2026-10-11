@@ -216,6 +216,45 @@ input:focus-visible,
   cursor: not-allowed;
 }
 
+.modes {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.mode {
+  appearance: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 10px 4px 8px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg);
+  color: var(--muted);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.mode:hover {
+  color: var(--text);
+  background: var(--hover);
+}
+
+.mode[aria-pressed="true"] {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: var(--hover);
+  font-weight: 600;
+}
+
+.mode:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
 .segmented.small button {
   padding: 4px 12px;
   font-size: 13px;
