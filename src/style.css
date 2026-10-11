@@ -452,7 +452,7 @@ input:focus-visible,
 .colorbar {
   right: 12px;
   top: 12px;
-  bottom: var(--dock);
+  bottom: calc(var(--dock) + 8px);
   width: 84px;
   height: auto;
 }
@@ -784,7 +784,7 @@ input[type="range"] {
 
   .colorbar {
     width: 76px;
-    bottom: calc(var(--dock) + 56px);
+    bottom: calc(var(--dock) + 64px);
   }
 
   .drawer {
@@ -890,7 +890,7 @@ input[type="range"] {
 
   .colorbar {
     top: 8px;
-    bottom: var(--dock);
+    bottom: calc(var(--dock) + 8px);
     width: 76px;
   }
 
