@@ -96,18 +96,16 @@ body {
 }
 
 .brand {
-  appearance: none;
-  border: 0;
-  background: transparent;
-  font: inherit;
-  padding: 0;
-  cursor: pointer;
   display: flex;
   align-items: center;
   gap: 8px;
   font-weight: 650;
   color: var(--accent);
   letter-spacing: 0.2px;
+}
+
+.brand .button {
+  color: var(--accent);
 }
 
 .brand span {
@@ -154,8 +152,7 @@ body {
 .segmented button:focus-visible,
 select:focus-visible,
 input:focus-visible,
-.mini:focus-visible,
-.brand:focus-visible {
+.mini:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
