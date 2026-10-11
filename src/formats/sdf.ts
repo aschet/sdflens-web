@@ -358,7 +358,6 @@ function describe(header: Header): InfoSection[] {
     format: `SDF, ${header.binary ? "binary" : "ASCII"}`,
     revision: header.dialect,
     feature,
-    layers: 1,
     size: sizeText(feature, header.columns, header.rows),
     step: stepText(feature, header.xScale, header.yScale),
     dataType: `${header.type.name}, factor ${g(header.zScale)}`,

@@ -114,7 +114,7 @@ export function readX3p(bytes: Uint8Array, name: string): SurfaceFile {
     name,
     layerCount: layers,
     layer,
-    info: describe({ root, record1, axesElement, cloud, columns, rows, layers, x, y, z, binary: !!link }),
+    info: describe({ root, record1, axesElement, cloud, columns, rows, x, y, z, binary: !!link }),
   };
 }
 
@@ -274,7 +274,6 @@ interface Context {
   cloud: boolean;
   columns: number;
   rows: number;
-  layers: number;
   x: Axis;
   y: Axis;
   z: Axis;
@@ -307,7 +306,6 @@ function describe(c: Context): InfoSection[] {
     format: `x3p, ${c.binary ? "binary" : "XML"}`,
     revision: text(child(c.record1, "Revision")) ?? "not set",
     feature,
-    layers: c.layers,
     size: sizeText(feature, c.columns, c.rows),
     step: regular ? stepText(feature, Math.abs(c.x.increment), Math.abs(c.y.increment)) : undefined,
     positions: regular ? undefined : "stored for every point",

@@ -14,7 +14,6 @@ export interface Description {
   format: string;
   revision: string;
   feature: Feature;
-  layers: number;
   size: string;
   /** The distance between points of a regular grid. */
   step?: string;
@@ -72,7 +71,6 @@ export function describeFile(d: Description): InfoSection[] {
       ["Feature", d.feature],
     ],
   };
-  if (d.layers > 1) file.rows.push(["Layers", String(d.layers)]);
   const data: InfoSection = { title: "Data", rows: [["Size", d.size]] };
   if (d.step) data.rows.push(["Step", d.step]);
   if (d.positions) data.rows.push(["Positions", d.positions]);

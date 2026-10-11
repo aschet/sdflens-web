@@ -366,7 +366,7 @@ function renderInfo(): void {
   const s = state.surface;
   if (!file || !stats || !s) return;
   const layer: InfoSection = {
-    title: file.layerCount > 1 ? `Layer ${state.layer + 1}` : "Heights",
+    title: "Heights",
     rows: [
       ["Lowest", formatLength(stats.min)],
       ["Highest", formatLength(stats.max)],
