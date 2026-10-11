@@ -170,7 +170,6 @@ function setView(name: ViewName): void {
   $("profileBar").hidden = name !== "profile";
   $("modeField").hidden = name !== "3d";
   $("zField").hidden = name !== "3d";
-  $("zReset").hidden = name !== "3d";
   updateTools();
   updateAvailability();
   showReadout("");
@@ -277,7 +276,7 @@ function loadLayer(index: number, keepView: boolean): void {
   const layers = file.layerCount;
   $("layerBar").hidden = layers < 2;
   app.dataset.layers = layers < 2 ? "one" : "many";
-  $("layerLabel").textContent = `Layer ${index + 1} / ${layers}`;
+  $("layerLabel").lastChild!.textContent = `${index + 1} / ${layers}`;
   renderInfo();
   if (app.dataset.state === "loaded") {
     if (state.view === "3d") ensureMesh();

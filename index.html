@@ -50,7 +50,7 @@
         <div id="readout" class="readout" role="status" aria-live="polite"></div>
         <div class="stepper" id="layerBar" hidden>
       <button id="layerPrev" aria-label="Previous layer" title="Previous layer">‹</button>
-      <span id="layerLabel">Layer 1 / 1</span>
+      <span id="layerLabel"><span class="word">Layer </span>1 / 1</span>
       <button id="layerNext" aria-label="Next layer" title="Next layer">›</button>
 </div>
       </div>
@@ -91,8 +91,12 @@
         <button class="mode" data-mode="points" aria-pressed="false" title="Measured points"><svg viewBox="0 0 24 24" width="30" height="30" aria-hidden="true"><path d="M3 17l5-10h13l-5 10z" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round" opacity=".35"/><circle cx="9" cy="9.5" r="1.5" fill="currentColor"/><circle cx="13" cy="9.5" r="1.5" fill="currentColor"/><circle cx="17" cy="9.5" r="1.5" fill="currentColor"/><circle cx="7.5" cy="12.5" r="1.5" fill="currentColor"/><circle cx="11.5" cy="12.5" r="1.5" fill="currentColor"/><circle cx="15.5" cy="12.5" r="1.5" fill="currentColor"/><circle cx="6" cy="15.2" r="1.5" fill="currentColor"/><circle cx="10" cy="15.2" r="1.5" fill="currentColor"/><circle cx="14" cy="15.2" r="1.5" fill="currentColor"/></svg><span>Points</span></button>
       </div>
     </div>
-    <label class="field" id="zField"><span>Height scale <output id="zOutput">×1</output></span><input id="zSlider" type="range" min="0" max="1000" value="400"></label>
-    <button id="zReset" class="link" type="button">Reset height scale</button>
+    <div class="field" id="zField">
+      <div class="field-head"><span>Height scale</span><output id="zOutput">×1</output>
+        <button id="zReset" class="mini" type="button" title="Reset height scale" aria-label="Reset height scale"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 12a8 8 0 1 0 2.6-5.9M4 4v4h4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      </div>
+      <input id="zSlider" type="range" min="0" max="1000" value="400" aria-label="Height scale">
+    </div>
   </aside>
 
   <aside id="drawer" class="drawer" hidden aria-label="File information">

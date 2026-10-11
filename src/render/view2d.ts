@@ -9,10 +9,10 @@ import { formatLength } from "../units";
 import { drawAxes, type Box } from "./axes";
 import type { Tool } from "./view3d";
 
-const LEFT = 64;
-const TOP = 12;
-const RIGHT = 16;
-const BOTTOM = 46;
+const LEFT = 48;
+const TOP = 8;
+const RIGHT = 14;
+const BOTTOM = 36;
 const ZOOM_STEP = 1.2;
 const CLICK_DISTANCE = 4;
 const MAX_LEVEL_SIDE = 8192;

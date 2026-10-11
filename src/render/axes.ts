@@ -121,15 +121,15 @@ export function drawAxes(
   context.textAlign = "center";
   for (const tick of xTicks.major) context.fillText(formatTick(tick, xFactor), x.toScreen(tick), bottom + MAJOR + 13);
   context.textAlign = "right";
-  for (const tick of yTicks.major) context.fillText(formatTick(tick, yFactor), box.left - MAJOR - 4, y.toScreen(tick) + 4);
+  for (const tick of yTicks.major) context.fillText(formatTick(tick, yFactor), box.left - MAJOR - 3, y.toScreen(tick) + 4);
 
   // The titles: the unit follows the name, so that the labels stay short.
   context.fillStyle = colors.foreground;
   context.font = `600 ${FONT}`;
   context.textAlign = "right";
-  context.fillText(`${x.title} (${xSymbol})`, right, bottom + MAJOR + 28);
+  context.fillText(`${x.title} (${xSymbol})`, right, bottom + MAJOR + 25);
   context.save();
-  context.translate(14, box.top + box.height / 2);
+  context.translate(10, box.top + box.height / 2);
   context.rotate(-Math.PI / 2);
   context.textAlign = "center";
   context.fillText(`${y.title} (${ySymbol})`, 0, 0);
