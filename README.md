@@ -3,9 +3,8 @@
 [![CI](https://github.com/aschet/sdflens-web/actions/workflows/ci.yml/badge.svg)](https://github.com/aschet/sdflens-web/actions/workflows/ci.yml)
 
 Browser viewer for ISO 25178-71 Surface Data Files (`.sdf`) and ISO 25178-72 x3p files (`.x3p`), the web
-counterpart of [sdflens](https://github.com/aschet/sdflens). It runs entirely in the browser: a file is read on
-your computer and is not uploaded. The build is a single HTML file, so it also works from a local file and from
-any static host, without a server of its own.
+counterpart of [sdflens](https://github.com/aschet/sdflens). The build is a single HTML file, so it also works
+from a local file and from any static host, without a server of its own.
 
 Online: <https://aschet.github.io/sdflens-web/>
 
