@@ -17,7 +17,10 @@ export class Colorbar {
   private foreground = '#e6e6e6';
   private readonly observer: ResizeObserver;
 
-  constructor(private readonly canvas: HTMLCanvasElement) {
+  private readonly canvas: HTMLCanvasElement;
+
+  constructor(canvas: HTMLCanvasElement) {
+    this.canvas = canvas;
     this.observer = new ResizeObserver(() => {
       this.draw();
     });

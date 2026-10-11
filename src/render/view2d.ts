@@ -100,7 +100,10 @@ export class View2D {
   private press: { x: number; y: number; moved: boolean } | null = null;
   private pinch: { distance: number; x: number; y: number } | null = null;
 
-  constructor(private readonly host: HTMLElement) {
+  private readonly host: HTMLElement;
+
+  constructor(host: HTMLElement) {
+    this.host = host;
     this.canvas.className = 'plane';
     this.canvas.style.touchAction = 'none';
     host.append(this.canvas);

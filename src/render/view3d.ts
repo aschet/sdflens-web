@@ -104,7 +104,10 @@ export class View3D {
   private press: { x: number; y: number; moved: boolean } | null = null;
   private pinch: { distance: number; x: number; y: number } | null = null;
 
-  constructor(private readonly host: HTMLElement) {
+  private readonly host: HTMLElement;
+
+  constructor(host: HTMLElement) {
+    this.host = host;
     this.canvas.className = 'gl';
     this.overlay.className = 'overlay';
     host.append(this.canvas, this.overlay);

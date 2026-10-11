@@ -37,7 +37,10 @@ export class Locator {
   private timer = 0;
   private held = false;
 
-  constructor(private readonly element: HTMLElement) {
+  private readonly element: HTMLElement;
+
+  constructor(element: HTMLElement) {
+    this.element = element;
     element.append(this.canvas, this.caption);
   }
 

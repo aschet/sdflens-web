@@ -12,7 +12,13 @@
     "isolatedModules": true,
     "skipLibCheck": true,
     "noEmit": true,
-    "types": ["vite/client"]
+    "types": ["vite/client"],
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "exactOptionalPropertyTypes": true,
+    "verbatimModuleSyntax": true,
+    "erasableSyntaxOnly": true,
+    "forceConsistentCasingInFileNames": true
   },
-  "include": ["src", "test", "vite.config.ts"]
+  "include": ["src", "test", "*.config.ts"]
 }

@@ -15,18 +15,18 @@ export interface Description {
   revision: string;
   feature: Feature;
   /** Who created the data, and when; undefined if the file does not say. */
-  creator?: string;
-  creation?: string;
+  creator?: string | undefined;
+  creation?: string | undefined;
   size: string;
   /** The distance between the points of a regular grid; "irregular" for an irregular grid and a cloud. */
   step: string;
   /** The data type in which each axis is stored, if it is stored; the names are the same for every format. */
-  types: { x?: string; y?: string; z: string };
-  resolution?: string;
-  placement?: string;
+  types: { x?: string | undefined; y?: string | undefined; z: string };
+  resolution?: string | undefined;
+  placement?: string | undefined;
   /** The fields of the instrument and of the probing system; those that a format does not have, or that are not given, show as "-". */
-  instrument: Partial<Record<InstrumentField, string>>;
-  probing: Partial<Record<ProbingField, string>>;
+  instrument: Partial<Record<InstrumentField, string | undefined>>;
+  probing: Partial<Record<ProbingField, string | undefined>>;
 }
 
 export const INSTRUMENT_FIELDS = [
