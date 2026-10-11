@@ -555,8 +555,7 @@ function showReadout(text: string): void {
     return;
   }
   const size = s.kind === "cloud" ? `${s.columns.toLocaleString("en")} points` : s.rows === 1 ? `${s.columns.toLocaleString("en")} points` : `${s.columns.toLocaleString("en")} × ${s.rows.toLocaleString("en")} points`;
-  const hint = state.view === "3d" ? "Click the surface to read a point" : state.view === "2d" ? "Move over the image to read a point" : "Move over the plot to read a point";
-  element.textContent = `${size}${stats.invalid ? `, ${stats.invalid.toLocaleString("en")} not measured` : ""} · ${hint}`;
+  element.textContent = `${size}${stats.invalid ? `, ${stats.invalid.toLocaleString("en")} not measured` : ""}`;
 }
 
 // ------------------------------------------------------------------------------------------ opening files
