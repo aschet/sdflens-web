@@ -4,7 +4,7 @@
 
 /** One topography: a grid of heights, or a cloud of points. Lengths are in meters, NaN is not measured. */
 export interface Surface {
-  kind: "grid" | "cloud";
+  kind: 'grid' | 'cloud';
   /** Points along x of a grid, the number of points of a cloud. */
   columns: number;
   /** Rows of a grid, 1 for a profile and for a cloud. */
@@ -27,7 +27,7 @@ export interface InfoSection {
 }
 
 export interface SurfaceFile {
-  format: "sdf" | "x3p";
+  format: 'sdf' | 'x3p';
   name: string;
   layerCount: number;
   /** Decodes layer ``index``, counted from 0. */
@@ -38,7 +38,7 @@ export interface SurfaceFile {
 export class FormatError extends Error {
   constructor(message: string) {
     super(message);
-    this.name = "FormatError";
+    this.name = 'FormatError';
   }
 }
 
@@ -57,7 +57,11 @@ export function statistics(surface: Surface): Stats {
   const { z, x, y } = surface;
   for (let i = 0; i < z.length; i++) {
     const value = z[i] as number;
-    if (!Number.isFinite(value) || (x && !Number.isFinite(x[i] as number)) || (y && !Number.isFinite(y[i] as number))) {
+    if (
+      !Number.isFinite(value) ||
+      (x && !Number.isFinite(x[i] as number)) ||
+      (y && !Number.isFinite(y[i] as number))
+    ) {
       continue;
     }
     measured++;
@@ -68,8 +72,15 @@ export function statistics(surface: Surface): Stats {
 }
 
 /** The lateral extent of the measured points as [lo, hi] along x and y. */
-export function lateralRange(surface: Surface): { x: [number, number]; y: [number, number] } {
-  const range = (values: Float32Array | null, count: number, step: number): [number, number] => {
+export function lateralRange(surface: Surface): {
+  x: [number, number];
+  y: [number, number];
+} {
+  const range = (
+    values: Float32Array | null,
+    count: number,
+    step: number,
+  ): [number, number] => {
     if (!values) return [0, (count - 1) * step];
     let lo = Infinity;
     let hi = -Infinity;
@@ -86,9 +97,13 @@ export function lateralRange(surface: Surface): { x: [number, number]; y: [numbe
 }
 
 /** The positions along a profile of a single row or column whose points are irregularly spaced, in increasing order. */
-export function irregularProfile(surface: Surface): { axis: "x" | "y"; positions: Float32Array } | null {
-  if (surface.kind !== "grid" || !surface.x || !surface.y) return null;
-  if (surface.rows === 1 && surface.columns > 1) return { axis: "x", positions: surface.x };
-  if (surface.columns === 1 && surface.rows > 1) return { axis: "y", positions: surface.y };
+export function irregularProfile(
+  surface: Surface,
+): { axis: 'x' | 'y'; positions: Float32Array } | null {
+  if (surface.kind !== 'grid' || !surface.x || !surface.y) return null;
+  if (surface.rows === 1 && surface.columns > 1)
+    return { axis: 'x', positions: surface.x };
+  if (surface.columns === 1 && surface.rows > 1)
+    return { axis: 'y', positions: surface.y };
   return null;
 }

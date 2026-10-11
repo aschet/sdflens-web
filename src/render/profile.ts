@@ -4,7 +4,7 @@
 
 /** Profile view: the height along one row or column of a grid. */
 
-import { drawAxes, type Box } from "./axes";
+import { drawAxes, type Box } from './axes';
 
 const LEFT = 48;
 const TOP = 8;
@@ -14,8 +14,8 @@ const ZOOM_STEP = 1.2;
 const MIN_POINTS = 3;
 const MARKER_RADIUS = 4.5;
 const CLICK_DISTANCE = 4;
-const LINE_COLOR = "#3f8fe0";
-const MARKER_COLOR = "#e67814";
+const LINE_COLOR = '#3f8fe0';
+const MARKER_COLOR = '#e67814';
 
 export interface Envelope {
   columns: Int32Array;
@@ -29,7 +29,12 @@ export interface Envelope {
  * The index interval [first, last) is split into ``columns`` equal parts; a part covers the points whose index lies
  * inside it. Parts without a measured point are left out.
  */
-export function envelope(values: ArrayLike<number>, first: number, last: number, columns: number): Envelope {
+export function envelope(
+  values: ArrayLike<number>,
+  first: number,
+  last: number,
+  columns: number,
+): Envelope {
   const columnsOut: number[] = [];
   const low: number[] = [];
   const high: number[] = [];
@@ -51,17 +56,26 @@ export function envelope(values: ArrayLike<number>, first: number, last: number,
       high.push(max);
     }
   }
-  return { columns: Int32Array.from(columnsOut), low: Float64Array.from(low), high: Float64Array.from(high) };
+  return {
+    columns: Int32Array.from(columnsOut),
+    low: Float64Array.from(low),
+    high: Float64Array.from(high),
+  };
 }
 
 /** The ranges of the columns, extended so that each touches the next adjacent column. */
-export function connect(columns: Int32Array, low: Float64Array, high: Float64Array): { low: Float64Array; high: Float64Array } {
+export function connect(
+  columns: Int32Array,
+  low: Float64Array,
+  high: Float64Array,
+): { low: Float64Array; high: Float64Array } {
   const lo = low.slice();
   const hi = high.slice();
   for (let i = 0; i + 1 < columns.length; i++) {
     if ((columns[i + 1] as number) - (columns[i] as number) !== 1) continue;
     if ((high[i] as number) < (low[i + 1] as number)) hi[i] = low[i + 1] as number;
-    else if ((low[i] as number) > (high[i + 1] as number)) lo[i] = high[i + 1] as number;
+    else if ((low[i] as number) > (high[i + 1] as number))
+      lo[i] = high[i + 1] as number;
   }
   return { low: lo, high: hi };
 }
@@ -70,7 +84,15 @@ export function connect(columns: Int32Array, low: Float64Array, high: Float64Arr
  * The columns that hold measured points of a profile with irregular positions, with the lowest and the highest
  * value of each. The interval [lo, hi] of positions is split into ``columns`` equal parts.
  */
-export function positionEnvelope(values: ArrayLike<number>, positions: ArrayLike<number>, start: number, stop: number, lo: number, hi: number, columns: number): Envelope {
+export function positionEnvelope(
+  values: ArrayLike<number>,
+  positions: ArrayLike<number>,
+  start: number,
+  stop: number,
+  lo: number,
+  hi: number,
+  columns: number,
+): Envelope {
   const low = new Float64Array(columns).fill(Infinity);
   const high = new Float64Array(columns).fill(-Infinity);
   const scale = columns / (hi - lo);
@@ -83,7 +105,8 @@ export function positionEnvelope(values: ArrayLike<number>, positions: ArrayLike
     if (value > (high[column] as number)) high[column] = value;
   }
   const kept: number[] = [];
-  for (let column = 0; column < columns; column++) if ((high[column] as number) >= (low[column] as number)) kept.push(column);
+  for (let column = 0; column < columns; column++)
+    if ((high[column] as number) >= (low[column] as number)) kept.push(column);
   return {
     columns: Int32Array.from(kept),
     low: Float64Array.from(kept, (c) => low[c] as number),
@@ -113,46 +136,57 @@ export class ProfilePlot {
   /** Called with the index of the point under the cursor, or -1. */
   onHover: (index: number) => void = () => {};
 
-  private readonly canvas = document.createElement("canvas");
+  private readonly canvas = document.createElement('canvas');
   private readonly observer: ResizeObserver;
   private values: Float32Array = new Float32Array(0);
   private step = 1;
   /** The positions of the points of an irregular profile, in increasing order, or null for a regular one. */
   private positions: Float32Array | null = null;
-  private axis = "x";
+  private axis = 'x';
   private x0 = 0;
   private span = 1;
   private hover = -1;
-  private tool: "pan" | "zoom" = "pan";
-  private style: Style = { background: "#1e1f22", foreground: "#e6e6e6", muted: "#9a9a9a" };
+  private tool: 'pan' | 'zoom' = 'pan';
+  private style: Style = {
+    background: '#1e1f22',
+    foreground: '#e6e6e6',
+    muted: '#9a9a9a',
+  };
   private width = 1;
   private height = 1;
   private ratio = 1;
   private frame = 0;
-  private readonly pointers = new Map<number, { x: number; y: number; type: string; button: number }>();
+  private readonly pointers = new Map<
+    number,
+    { x: number; y: number; type: string; button: number }
+  >();
   private press: { x: number; y: number; moved: boolean } | null = null;
   private pinch: { distance: number; x: number } | null = null;
 
   constructor(private readonly host: HTMLElement) {
-    this.canvas.className = "plane";
-    this.canvas.style.touchAction = "none";
+    this.canvas.className = 'plane';
+    this.canvas.style.touchAction = 'none';
     host.append(this.canvas);
-    this.canvas.addEventListener("pointerdown", (event) => this.onPointerDown(event));
-    this.canvas.addEventListener("pointermove", (event) => this.onPointerMove(event));
-    this.canvas.addEventListener("pointerup", (event) => this.onPointerUp(event));
-    this.canvas.addEventListener("pointercancel", (event) => this.onPointerUp(event, true));
-    this.canvas.addEventListener("pointerleave", (event) => {
-      if (event.pointerType === "mouse" && this.pointers.size === 0) this.setHover(-1);
+    this.canvas.addEventListener('pointerdown', (event) => this.onPointerDown(event));
+    this.canvas.addEventListener('pointermove', (event) => this.onPointerMove(event));
+    this.canvas.addEventListener('pointerup', (event) => this.onPointerUp(event));
+    this.canvas.addEventListener('pointercancel', (event) =>
+      this.onPointerUp(event, true),
+    );
+    this.canvas.addEventListener('pointerleave', (event) => {
+      if (event.pointerType === 'mouse' && this.pointers.size === 0) this.setHover(-1);
     });
-    this.canvas.addEventListener("wheel", (event) => this.onWheel(event), { passive: false });
-    this.canvas.addEventListener("contextmenu", (event) => event.preventDefault());
+    this.canvas.addEventListener('wheel', (event) => this.onWheel(event), {
+      passive: false,
+    });
+    this.canvas.addEventListener('contextmenu', (event) => event.preventDefault());
     this.observer = new ResizeObserver(() => this.resize());
     this.observer.observe(host);
     this.resize();
   }
 
   /** The action of the left mouse button: dragging pans, or zooms about the cursor. */
-  setTool(tool: "pan" | "zoom"): void {
+  setTool(tool: 'pan' | 'zoom'): void {
     this.tool = tool;
   }
 
@@ -165,8 +199,16 @@ export class ProfilePlot {
    * Shows ``values`` along ``axis``, spaced ``step`` meters apart, or at ``positions`` if the profile is irregular. A
    * series of the same size keeps the zoom.
    */
-  setSeries(values: Float32Array, step: number, axis: string, positions: Float32Array | null = null): void {
-    const same = values.length === this.values.length && step === this.step && (positions === null) === (this.positions === null);
+  setSeries(
+    values: Float32Array,
+    step: number,
+    axis: string,
+    positions: Float32Array | null = null,
+  ): void {
+    const same =
+      values.length === this.values.length &&
+      step === this.step &&
+      (positions === null) === (this.positions === null);
     this.values = values;
     this.step = step;
     this.positions = positions;
@@ -202,7 +244,12 @@ export class ProfilePlot {
 
   snapshot(): Promise<Blob> {
     this.render();
-    return new Promise((resolve, reject) => this.canvas.toBlob((blob) => (blob ? resolve(blob) : reject(new Error("No image"))), "image/png"));
+    return new Promise((resolve, reject) =>
+      this.canvas.toBlob(
+        (blob) => (blob ? resolve(blob) : reject(new Error('No image'))),
+        'image/png',
+      ),
+    );
   }
 
   dispose(): void {
@@ -232,8 +279,14 @@ export class ProfilePlot {
   private zoomAt(factor: number, px: number): void {
     const [low, high] = this.full();
     const anchor = this.x0 + (px / this.plotWidth()) * this.span;
-    const span = Math.min(Math.max(this.span / factor, Math.min(MIN_POINTS * this.step, high - low)), high - low);
-    this.x0 = Math.min(Math.max(anchor - (px / this.plotWidth()) * span, low), high - span);
+    const span = Math.min(
+      Math.max(this.span / factor, Math.min(MIN_POINTS * this.step, high - low)),
+      high - low,
+    );
+    this.x0 = Math.min(
+      Math.max(anchor - (px / this.plotWidth()) * span, low),
+      high - span,
+    );
     this.span = span;
     this.requestRender();
   }
@@ -257,7 +310,7 @@ export class ProfilePlot {
   }
 
   private render(): void {
-    const context = this.canvas.getContext("2d") as CanvasRenderingContext2D;
+    const context = this.canvas.getContext('2d') as CanvasRenderingContext2D;
     context.setTransform(this.ratio, 0, 0, this.ratio, 0, 0);
     context.fillStyle = this.style.background;
     context.fillRect(0, 0, this.width, this.height);
@@ -271,8 +324,12 @@ export class ProfilePlot {
     const first = xLo / this.step;
     const last = xHi / this.step;
     // The indices of the visible points; a line is continued to the neighbours of the first and the last.
-    const start = positions ? Math.max(0, lowerBound(positions, xLo) - 1) : Math.max(0, Math.ceil(first));
-    const stop = positions ? Math.min(this.values.length, lowerBound(positions, xHi) + 1) : Math.min(this.values.length, Math.floor(last) + 1);
+    const start = positions
+      ? Math.max(0, lowerBound(positions, xLo) - 1)
+      : Math.max(0, Math.ceil(first));
+    const stop = positions
+      ? Math.min(this.values.length, lowerBound(positions, xHi) + 1)
+      : Math.min(this.values.length, Math.floor(last) + 1);
     const [zLo, zHi] = zRange(this.values.subarray(start, stop));
 
     context.save();
@@ -290,7 +347,8 @@ export class ProfilePlot {
       this.drawPoints(context, start, stop, zLo, factor, bottom);
     }
     if (this.hover >= 0 && Number.isFinite(this.values[this.hover])) {
-      const x = LEFT + ((this.positionAt(this.hover) - this.x0) / this.span) * plotWidth;
+      const x =
+        LEFT + ((this.positionAt(this.hover) - this.x0) / this.span) * plotWidth;
       const y = bottom - ((this.values[this.hover] as number) - zLo) * factor;
       context.beginPath();
       context.arc(x, y, MARKER_RADIUS, 0, Math.PI * 2);
@@ -305,17 +363,39 @@ export class ProfilePlot {
     drawAxes(
       context,
       box,
-      { lo: Math.max(xLo, this.full()[0]), hi: Math.min(xHi, this.full()[1]), toScreen: (v) => LEFT + ((v - this.x0) / this.span) * plotWidth, title: this.axis },
-      { lo: zLo, hi: zHi, toScreen: (v) => bottom - (v - zLo) * factor, title: "z" },
+      {
+        lo: Math.max(xLo, this.full()[0]),
+        hi: Math.min(xHi, this.full()[1]),
+        toScreen: (v) => LEFT + ((v - this.x0) / this.span) * plotWidth,
+        title: this.axis,
+      },
+      { lo: zLo, hi: zHi, toScreen: (v) => bottom - (v - zLo) * factor, title: 'z' },
       this.style,
       { grid: true, zeroLine: true },
     );
   }
 
-  private drawEnvelope(context: CanvasRenderingContext2D, first: number, last: number, zLo: number, factor: number, bottom: number, start: number, stop: number): void {
+  private drawEnvelope(
+    context: CanvasRenderingContext2D,
+    first: number,
+    last: number,
+    zLo: number,
+    factor: number,
+    bottom: number,
+    start: number,
+    stop: number,
+  ): void {
     const plotWidth = Math.round(this.plotWidth());
     const raw = this.positions
-      ? positionEnvelope(this.values, this.positions, start, stop, this.x0, this.x0 + this.span, plotWidth)
+      ? positionEnvelope(
+          this.values,
+          this.positions,
+          start,
+          stop,
+          this.x0,
+          this.x0 + this.span,
+          plotWidth,
+        )
       : envelope(this.values, first, last, plotWidth);
     const { low, high } = connect(raw.columns, raw.low, raw.high);
     context.beginPath();
@@ -329,7 +409,14 @@ export class ProfilePlot {
     context.fill();
   }
 
-  private drawPoints(context: CanvasRenderingContext2D, start: number, stop: number, zLo: number, factor: number, bottom: number): void {
+  private drawPoints(
+    context: CanvasRenderingContext2D,
+    start: number,
+    stop: number,
+    zLo: number,
+    factor: number,
+    bottom: number,
+  ): void {
     const plotWidth = this.plotWidth();
     context.beginPath();
     let open = false;
@@ -349,14 +436,24 @@ export class ProfilePlot {
   }
 
   private indexAt(x: number, y: number): number {
-    const inside = x >= LEFT && x <= LEFT + this.plotWidth() && y >= TOP && y <= TOP + this.plotHeight();
+    const inside =
+      x >= LEFT &&
+      x <= LEFT + this.plotWidth() &&
+      y >= TOP &&
+      y <= TOP + this.plotHeight();
     if (!inside) return -1;
     const position = this.x0 + ((x - LEFT) / this.plotWidth()) * this.span;
     if (this.positions) {
       // The nearest point of an irregular profile.
       const above = lowerBound(this.positions, position);
       const below = above - 1;
-      const index = above >= this.values.length || (below >= 0 && position - (this.positions[below] as number) <= (this.positions[above] as number) - position) ? below : above;
+      const index =
+        above >= this.values.length ||
+        (below >= 0 &&
+          position - (this.positions[below] as number) <=
+            (this.positions[above] as number) - position)
+          ? below
+          : above;
       return index >= 0 && index < this.values.length ? index : -1;
     }
     const index = Math.round(position / this.step);
@@ -379,7 +476,12 @@ export class ProfilePlot {
   private onPointerDown(event: PointerEvent): void {
     const { x, y } = this.local(event);
     this.canvas.setPointerCapture(event.pointerId);
-    this.pointers.set(event.pointerId, { x, y, type: event.pointerType, button: event.button });
+    this.pointers.set(event.pointerId, {
+      x,
+      y,
+      type: event.pointerType,
+      button: event.button,
+    });
     if (this.pointers.size === 1) {
       this.press = { x, y, moved: false };
     } else {
@@ -406,18 +508,20 @@ export class ProfilePlot {
     pointer.y = y;
     if (this.pointers.size >= 2) {
       const now = this.pinchState();
-      if (now && this.pinch && this.pinch.distance > 0) this.zoomAt(now.distance / this.pinch.distance, now.x - LEFT);
+      if (now && this.pinch && this.pinch.distance > 0)
+        this.zoomAt(now.distance / this.pinch.distance, now.x - LEFT);
       this.pinch = now;
       return;
     }
-    if (this.press && Math.hypot(x - this.press.x, y - this.press.y) > CLICK_DISTANCE) this.press.moved = true;
+    if (this.press && Math.hypot(x - this.press.x, y - this.press.y) > CLICK_DISTANCE)
+      this.press.moved = true;
     if (this.press?.moved) this.setHover(-1);
     let tool = this.tool;
-    if (pointer.type === "mouse") {
-      if (pointer.button === 1) tool = "pan";
-      else if (pointer.button === 2) tool = "zoom";
+    if (pointer.type === 'mouse') {
+      if (pointer.button === 1) tool = 'pan';
+      else if (pointer.button === 2) tool = 'zoom';
     }
-    if (tool === "zoom") {
+    if (tool === 'zoom') {
       this.zoomAt(Math.exp(-dy * 0.01), x - LEFT);
       return;
     }
@@ -433,7 +537,8 @@ export class ProfilePlot {
     if (this.pointers.size < 2) this.pinch = null;
     const press = this.press;
     if (this.pointers.size === 0) this.press = null;
-    if (cancelled || !pointer || !press || press.moved || pointer.type === "mouse") return;
+    if (cancelled || !pointer || !press || press.moved || pointer.type === 'mouse')
+      return;
     // A tap reads the point, which is how a touch screen shows a value.
     this.setHover(this.indexAt(press.x, press.y));
   }

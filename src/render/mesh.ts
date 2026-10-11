@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-import type { Surface } from "../model";
+import type { Surface } from '../model';
 
 /** Grids with more points are thinned out for the mesh, to about 2000 x 2000. */
 export const MAX_MESH_POINTS = 4_000_000;
@@ -45,7 +45,7 @@ function sampleIndices(count: number, stride: number): number[] {
 }
 
 export function buildMesh(surface: Surface): Mesh {
-  return surface.kind === "cloud" ? cloudMesh(surface) : gridMesh(surface);
+  return surface.kind === 'cloud' ? cloudMesh(surface) : gridMesh(surface);
 }
 
 function finiteRange(values: ArrayLike<number>, valid?: Uint8Array): [number, number] {
@@ -74,15 +74,21 @@ function gridMesh(surface: Surface): Mesh {
   const valid = new Uint8Array(count);
   for (let r = 0; r < rows; r++) {
     for (let c = 0; c < columns; c++) {
-      const source = (rowIndices[r] as number) * surface.columns + (columnIndices[c] as number);
+      const source =
+        (rowIndices[r] as number) * surface.columns + (columnIndices[c] as number);
       const target = r * columns + c;
       const height = surface.z[source] as number;
-      const px = surface.x ? (surface.x[source] as number) : (columnIndices[c] as number) * surface.stepX;
-      const py = surface.y ? (surface.y[source] as number) : (rowIndices[r] as number) * surface.stepY;
+      const px = surface.x
+        ? (surface.x[source] as number)
+        : (columnIndices[c] as number) * surface.stepX;
+      const py = surface.y
+        ? (surface.y[source] as number)
+        : (rowIndices[r] as number) * surface.stepY;
       x[target] = px;
       y[target] = py;
       z[target] = height;
-      valid[target] = Number.isFinite(height) && Number.isFinite(px) && Number.isFinite(py) ? 1 : 0;
+      valid[target] =
+        Number.isFinite(height) && Number.isFinite(px) && Number.isFinite(py) ? 1 : 0;
     }
   }
   return assemble(x, y, z, valid, { rows, columns, cloud: false });
@@ -101,7 +107,10 @@ function cloudMesh(surface: Surface): Mesh {
 }
 
 function assemble(
-  x: Float64Array, y: Float64Array, z: Float64Array, valid: Uint8Array,
+  x: Float64Array,
+  y: Float64Array,
+  z: Float64Array,
+  valid: Uint8Array,
   shape: { rows: number; columns: number; cloud: boolean },
 ): Mesh {
   const [xMin, xMax] = finiteRange(x, valid);
@@ -112,7 +121,11 @@ function assemble(
   // The largest lateral extent; a single point or a vertical line falls back to the height range.
   const lateral = Math.max(extentX, extentY);
   const scale = lateral > 0 ? lateral : zMax > zMin ? zMax - zMin : 1e-6;
-  const origin: [number, number, number] = [0.5 * (xMin + xMax), 0.5 * (yMin + yMax), 0.5 * (zMin + zMax)];
+  const origin: [number, number, number] = [
+    0.5 * (xMin + xMax),
+    0.5 * (yMin + yMax),
+    0.5 * (zMin + zMax),
+  ];
   const count = z.length;
   const vertices = new Float32Array(count * 3);
   for (let i = 0; i < count; i++) {
@@ -122,26 +135,38 @@ function assemble(
     vertices[i * 3 + 2] = ((z[i] as number) - origin[2]) / scale;
   }
   const { rows, columns } = shape;
-  const triangles = shape.cloud ? new Uint32Array(0) : triangleIndices(valid, rows, columns);
+  const triangles = shape.cloud
+    ? new Uint32Array(0)
+    : triangleIndices(valid, rows, columns);
   const lines = shape.cloud ? new Uint32Array(0) : lineIndices(valid, rows, columns);
   return {
-    vertices, triangles, lines, valid,
+    vertices,
+    triangles,
+    lines,
+    valid,
     isCloud: shape.cloud,
-    origin, scale,
+    origin,
+    scale,
     extent: [extentX / scale, extentY / scale],
     heightFraction: (zMax - zMin) / scale,
-    zMin, zMax,
+    zMin,
+    zMax,
   };
 }
 
 /** Two counter-clockwise triangles, seen from +z, for each cell whose four corners are measured. */
-export function triangleIndices(valid: Uint8Array, rows: number, columns: number): Uint32Array {
+export function triangleIndices(
+  valid: Uint8Array,
+  rows: number,
+  columns: number,
+): Uint32Array {
   if (rows < 2 || columns < 2) return new Uint32Array(0);
   let cells = 0;
   for (let r = 0; r < rows - 1; r++) {
     for (let c = 0; c < columns - 1; c++) {
       const i = r * columns + c;
-      if (valid[i] && valid[i + 1] && valid[i + columns] && valid[i + columns + 1]) cells++;
+      if (valid[i] && valid[i + 1] && valid[i + columns] && valid[i + columns + 1])
+        cells++;
     }
   }
   const out = new Uint32Array(cells * 6);
@@ -153,8 +178,12 @@ export function triangleIndices(valid: Uint8Array, rows: number, columns: number
       const i10 = i00 + columns;
       const i11 = i10 + 1;
       if (valid[i00] && valid[i01] && valid[i10] && valid[i11]) {
-        out[at++] = i00; out[at++] = i01; out[at++] = i11;
-        out[at++] = i00; out[at++] = i11; out[at++] = i10;
+        out[at++] = i00;
+        out[at++] = i01;
+        out[at++] = i11;
+        out[at++] = i00;
+        out[at++] = i11;
+        out[at++] = i10;
       }
     }
   }
@@ -162,7 +191,11 @@ export function triangleIndices(valid: Uint8Array, rows: number, columns: number
 }
 
 /** Line segments between all pairs of neighbouring measured points. */
-export function lineIndices(valid: Uint8Array, rows: number, columns: number): Uint32Array {
+export function lineIndices(
+  valid: Uint8Array,
+  rows: number,
+  columns: number,
+): Uint32Array {
   let segments = 0;
   for (let r = 0; r < rows; r++) {
     for (let c = 0; c < columns; c++) {
@@ -178,8 +211,14 @@ export function lineIndices(valid: Uint8Array, rows: number, columns: number): U
     for (let c = 0; c < columns; c++) {
       const i = r * columns + c;
       if (!valid[i]) continue;
-      if (c + 1 < columns && valid[i + 1]) { out[at++] = i; out[at++] = i + 1; }
-      if (r + 1 < rows && valid[i + columns]) { out[at++] = i; out[at++] = i + columns; }
+      if (c + 1 < columns && valid[i + 1]) {
+        out[at++] = i;
+        out[at++] = i + 1;
+      }
+      if (r + 1 < rows && valid[i + columns]) {
+        out[at++] = i;
+        out[at++] = i + columns;
+      }
     }
   }
   return out;

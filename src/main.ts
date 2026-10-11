@@ -2,23 +2,37 @@
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-import "./style.css";
-import { buildLut, colormapNames, DEFAULT_COLORMAP } from "./colormap";
-import { readFile } from "./formats";
-import { FormatError, irregularProfile, lateralRange, statistics, type Stats, type Surface, type SurfaceFile } from "./model";
-import { buildMesh, type Mesh } from "./render/mesh";
-import { ProfilePlot } from "./render/profile";
-import { View2D } from "./render/view2d";
-import { View3D, Z_FACTOR_MAX, Z_FACTOR_MIN, type RenderMode, type Tool } from "./render/view3d";
-import { SAMPLES } from "./samples";
-import { Colorbar } from "./ui/colorbar";
-import { Locator } from "./ui/locator";
-import { formatExtent, formatLength } from "./units";
+import './style.css';
+import { buildLut, colormapNames, DEFAULT_COLORMAP } from './colormap';
+import { readFile } from './formats';
+import {
+  FormatError,
+  irregularProfile,
+  lateralRange,
+  statistics,
+  type Stats,
+  type Surface,
+  type SurfaceFile,
+} from './model';
+import { buildMesh, type Mesh } from './render/mesh';
+import { ProfilePlot } from './render/profile';
+import { View2D } from './render/view2d';
+import {
+  View3D,
+  Z_FACTOR_MAX,
+  Z_FACTOR_MIN,
+  type RenderMode,
+  type Tool,
+} from './render/view3d';
+import { SAMPLES } from './samples';
+import { Colorbar } from './ui/colorbar';
+import { Locator } from './ui/locator';
+import { formatExtent, formatLength } from './units';
 
-type ViewName = "3d" | "2d" | "profile";
+type ViewName = '3d' | '2d' | 'profile';
 
 const $ = <T extends HTMLElement>(id: string): T => document.getElementById(id) as T;
-const app = $("app");
+const app = $('app');
 
 const state = {
   file: null as SurfaceFile | null,
@@ -27,13 +41,13 @@ const state = {
   stats: null as Stats | null,
   extent: null as ReturnType<typeof lateralRange> | null,
   mesh: null as Mesh | null,
-  view: "3d" as ViewName,
+  view: '3d' as ViewName,
   colormap: DEFAULT_COLORMAP,
   reverse: false,
-  mode: "surface" as RenderMode,
+  mode: 'surface' as RenderMode,
   zFactor: 1,
-  tool: "rotate" as Tool,
-  profileAxis: "x" as "x" | "y",
+  tool: 'rotate' as Tool,
+  profileAxis: 'x' as 'x' | 'y',
   profileIndex: 0,
   meshKeepView: false,
 };
@@ -42,15 +56,27 @@ let view3d: View3D | null = null;
 let view2d: View2D | null = null;
 let profile: ProfilePlot | null = null;
 let webglProblem: string | null = null;
-const colorbar = new Colorbar($<HTMLCanvasElement>("colorbar"));
-const locator = new Locator($("locator"));
+const colorbar = new Colorbar($<HTMLCanvasElement>('colorbar'));
+const locator = new Locator($('locator'));
 
 // ------------------------------------------------------------------------------------------------ theme
 
-function cssColors(): { background: string; foreground: string; muted: string; surface: string; border: string } {
+function cssColors(): {
+  background: string;
+  foreground: string;
+  muted: string;
+  surface: string;
+  border: string;
+} {
   const style = getComputedStyle(document.documentElement);
   const read = (name: string): string => style.getPropertyValue(name).trim();
-  return { background: read("--stage"), foreground: read("--text"), muted: read("--muted"), surface: read("--surface"), border: read("--border") };
+  return {
+    background: read('--stage'),
+    foreground: read('--text'),
+    muted: read('--muted'),
+    surface: read('--surface'),
+    border: read('--border'),
+  };
 }
 
 function applyColors(): void {
@@ -61,11 +87,11 @@ function applyColors(): void {
   colorbar.setColors(colors.foreground);
 }
 
-function setTheme(theme: "light" | "dark" | null): void {
+function setTheme(theme: 'light' | 'dark' | null): void {
   if (theme) document.documentElement.dataset.theme = theme;
   else delete document.documentElement.dataset.theme;
   try {
-    if (theme) localStorage.setItem("theme", theme);
+    if (theme) localStorage.setItem('theme', theme);
   } catch {
     // The choice is not remembered where storage is blocked.
   }
@@ -73,29 +99,34 @@ function setTheme(theme: "light" | "dark" | null): void {
 }
 
 try {
-  const saved = localStorage.getItem("theme");
-  if (saved === "light" || saved === "dark") document.documentElement.dataset.theme = saved;
+  const saved = localStorage.getItem('theme');
+  if (saved === 'light' || saved === 'dark')
+    document.documentElement.dataset.theme = saved;
 } catch {
   // Storage may be blocked.
 }
-window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", applyColors);
+window
+  .matchMedia('(prefers-color-scheme: dark)')
+  .addEventListener('change', applyColors);
 /** The theme in use: the one chosen with the button, otherwise the one the system prefers. */
-function currentTheme(): "light" | "dark" {
+function currentTheme(): 'light' | 'dark' {
   const chosen = document.documentElement.dataset.theme;
-  if (chosen === "light" || chosen === "dark") return chosen;
-  return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+  if (chosen === 'light' || chosen === 'dark') return chosen;
+  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
 }
 
-$("themeButton").addEventListener("click", () => setTheme(currentTheme() === "dark" ? "light" : "dark"));
+$('themeButton').addEventListener('click', () =>
+  setTheme(currentTheme() === 'dark' ? 'light' : 'dark'),
+);
 
 // ------------------------------------------------------------------------------------------------ views
 
 function ensureView3d(): View3D | null {
   if (view3d || webglProblem) return view3d;
   try {
-    view3d = new View3D($("view3d"));
+    view3d = new View3D($('view3d'));
   } catch (error) {
-    webglProblem = error instanceof Error ? error.message : "WebGL 2 is not available";
+    webglProblem = error instanceof Error ? error.message : 'WebGL 2 is not available';
     return null;
   }
   view3d.onPick = (text) => showReadout(text);
@@ -109,7 +140,7 @@ function ensureView3d(): View3D | null {
 
 function ensureView2d(): View2D {
   if (!view2d) {
-    view2d = new View2D($("view2d"));
+    view2d = new View2D($('view2d'));
     view2d.onHover = (text) => showReadout(text);
     view2d.setLut(currentLut());
     view2d.setTool(state.tool);
@@ -120,7 +151,7 @@ function ensureView2d(): View2D {
 
 function ensureProfile(): ProfilePlot {
   if (!profile) {
-    profile = new ProfilePlot($("viewProfile"));
+    profile = new ProfilePlot($('viewProfile'));
     profile.onHover = (index) => showReadout(profileText(index));
     applyColors();
   }
@@ -134,56 +165,62 @@ function currentLut(): Uint8Array {
 /** The views that can show the surface of the file. */
 function available(): Record<ViewName, string | null> {
   const s = state.surface;
-  if (!s) return { "3d": "No file", "2d": "No file", profile: "No file" };
-  const regular = s.kind === "grid" && s.x === null;
+  if (!s) return { '3d': 'No file', '2d': 'No file', profile: 'No file' };
+  const regular = s.kind === 'grid' && s.x === null;
   return {
-    "3d": webglProblem,
-    "2d": regular && s.rows > 1 && s.columns > 1 ? null : "Needs a surface on a regular grid",
-    profile: regular || irregularProfile(s) ? null : "Needs a profile or a surface on a regular grid",
+    '3d': webglProblem,
+    '2d':
+      regular && s.rows > 1 && s.columns > 1
+        ? null
+        : 'Needs a surface on a regular grid',
+    profile:
+      regular || irregularProfile(s)
+        ? null
+        : 'Needs a profile or a surface on a regular grid',
   };
 }
 
 function setView(name: ViewName): void {
   const reasons = available();
-  if (name === "3d") ensureView3d();
-  if (reasons[name] !== null || (name === "3d" && !view3d)) {
-    const reason = name === "3d" ? webglProblem ?? reasons["3d"] : reasons[name];
+  if (name === '3d') ensureView3d();
+  if (reasons[name] !== null || (name === '3d' && !view3d)) {
+    const reason = name === '3d' ? (webglProblem ?? reasons['3d']) : reasons[name];
     if (reason) toast(reason);
     return;
   }
   state.view = name;
   app.dataset.view = name;
-  $("view3d").hidden = name !== "3d";
-  $("view2d").hidden = name !== "2d";
-  $("viewProfile").hidden = name !== "profile";
-  for (const button of document.querySelectorAll<HTMLButtonElement>(".views button")) {
-    button.setAttribute("aria-selected", String(button.dataset.view === name));
+  $('view3d').hidden = name !== '3d';
+  $('view2d').hidden = name !== '2d';
+  $('viewProfile').hidden = name !== 'profile';
+  for (const button of document.querySelectorAll<HTMLButtonElement>('.views button')) {
+    button.setAttribute('aria-selected', String(button.dataset.view === name));
   }
-  if (name === "3d") {
+  if (name === '3d') {
     ensureMesh();
-  } else if (name === "2d") {
+  } else if (name === '2d') {
     ensureView2d();
     feed2d(false);
   } else {
     ensureProfile();
     updateProfile();
   }
-  $("colorbarBox").hidden = name === "profile" || state.file === null;
+  $('colorbarBox').hidden = name === 'profile' || state.file === null;
   colorbar.draw();
-  $("profileBar").hidden = name !== "profile";
+  $('profileBar').hidden = name !== 'profile';
   locator.hide();
-  $("modeField").hidden = name !== "3d";
-  $("zField").hidden = name !== "3d";
+  $('modeField').hidden = name !== '3d';
+  $('zField').hidden = name !== '3d';
   updateTools();
   updateAvailability();
-  showReadout("");
+  showReadout('');
 }
 
 function updateAvailability(): void {
   const reasons = available();
-  for (const button of document.querySelectorAll<HTMLButtonElement>(".views button")) {
+  for (const button of document.querySelectorAll<HTMLButtonElement>('.views button')) {
     const reason = reasons[button.dataset.view as ViewName];
-    button.disabled = reason !== null && button.dataset.view !== "3d";
+    button.disabled = reason !== null && button.dataset.view !== '3d';
     // The icon has no text, so the title says what the view is, and why it is not available.
     button.dataset.title ??= button.title;
     button.title = reason ? `${button.dataset.title}: ${reason}` : button.dataset.title;
@@ -191,20 +228,22 @@ function updateAvailability(): void {
 }
 
 function effectiveTool(): Tool {
-  return state.view !== "3d" && state.tool === "rotate" ? "pan" : state.tool;
+  return state.view !== '3d' && state.tool === 'rotate' ? 'pan' : state.tool;
 }
 
 function updateTools(): void {
   const effective = effectiveTool();
-  for (const button of document.querySelectorAll<HTMLButtonElement>(".tool[data-tool]")) {
+  for (const button of document.querySelectorAll<HTMLButtonElement>(
+    '.tool[data-tool]',
+  )) {
     const tool = button.dataset.tool as Tool;
     // Rotating is for the 3D view only.
-    button.hidden = tool === "rotate" && state.view !== "3d";
-    button.setAttribute("aria-pressed", String(tool === effective));
+    button.hidden = tool === 'rotate' && state.view !== '3d';
+    button.setAttribute('aria-pressed', String(tool === effective));
   }
   view3d?.setTool(state.tool);
   view2d?.setTool(effective);
-  profile?.setTool(effective === "zoom" ? "zoom" : "pan");
+  profile?.setTool(effective === 'zoom' ? 'zoom' : 'pan');
 }
 
 function ensureMesh(): void {
@@ -224,13 +263,13 @@ function nextPaint(): Promise<void> {
 }
 
 function setBusy(text: string | null): void {
-  $("busy").hidden = text === null;
-  if (text !== null) $("busyText").textContent = text;
+  $('busy').hidden = text === null;
+  if (text !== null) $('busyText').textContent = text;
 }
 
 let toastTimer = 0;
 function toast(message: string): void {
-  const element = $("toast");
+  const element = $('toast');
   element.textContent = message;
   element.hidden = false;
   clearTimeout(toastTimer);
@@ -245,15 +284,30 @@ async function openBytes(bytes: Uint8Array, name: string): Promise<void> {
     state.file = file;
     state.layer = 0;
     loadLayer(0, false);
-    app.dataset.state = "loaded";
-    $("fileName").textContent = name;
-    $("fileName").title = name;
+    app.dataset.state = 'loaded';
+    $('fileName').textContent = name;
+    $('fileName').title = name;
     document.title = `${name} · sdflens web`;
     const reasons = available();
-    const profileOnly = state.surface !== null && state.surface.kind === "grid" && (state.surface.rows === 1 || state.surface.columns === 1);
-    setView(profileOnly && reasons.profile === null ? "profile" : reasons["3d"] === null ? "3d" : reasons["2d"] === null ? "2d" : "profile");
+    const profileOnly =
+      state.surface !== null &&
+      state.surface.kind === 'grid' &&
+      (state.surface.rows === 1 || state.surface.columns === 1);
+    setView(
+      profileOnly && reasons.profile === null
+        ? 'profile'
+        : reasons['3d'] === null
+          ? '3d'
+          : reasons['2d'] === null
+            ? '2d'
+            : 'profile',
+    );
   } catch (error) {
-    toast(error instanceof FormatError ? `${name}: ${error.message}` : `${name}: ${error instanceof Error ? error.message : String(error)}`);
+    toast(
+      error instanceof FormatError
+        ? `${name}: ${error.message}`
+        : `${name}: ${error instanceof Error ? error.message : String(error)}`,
+    );
   } finally {
     setBusy(null);
   }
@@ -264,7 +318,8 @@ function loadLayer(index: number, keepView: boolean): void {
   const file = state.file as SurfaceFile;
   const surface = file.layer(index);
   const stats = statistics(surface);
-  if (stats.measured === 0) throw new FormatError("The file contains no measured points");
+  if (stats.measured === 0)
+    throw new FormatError('The file contains no measured points');
   state.layer = index;
   state.surface = surface;
   state.stats = stats;
@@ -274,48 +329,62 @@ function loadLayer(index: number, keepView: boolean): void {
   state.meshKeepView = keepView;
   if (!keepView) {
     // A single column is a profile along y.
-    state.profileAxis = surface.columns < 2 ? "y" : "x";
-    state.profileIndex = Math.floor((state.profileAxis === "x" ? surface.rows : surface.columns) / 2);
+    state.profileAxis = surface.columns < 2 ? 'y' : 'x';
+    state.profileIndex = Math.floor(
+      (state.profileAxis === 'x' ? surface.rows : surface.columns) / 2,
+    );
     markAxis();
   }
   if (view3d) view3d.setMesh(null);
   colorbar.update(currentLut(), [stats.min, stats.max]);
   const layers = file.layerCount;
-  $("layerBar").hidden = layers < 2;
-  app.dataset.layers = layers < 2 ? "one" : "many";
-  $("layerLabel").lastChild!.textContent = `${index + 1} / ${layers}`;
+  $('layerBar').hidden = layers < 2;
+  app.dataset.layers = layers < 2 ? 'one' : 'many';
+  $('layerLabel').lastChild!.textContent = `${index + 1} / ${layers}`;
   renderInfo();
-  if (app.dataset.state === "loaded") {
-    if (state.view === "3d") ensureMesh();
-    else if (state.view === "2d") feed2d(keepView);
+  if (app.dataset.state === 'loaded') {
+    if (state.view === '3d') ensureMesh();
+    else if (state.view === '2d') feed2d(keepView);
     else updateProfile();
   }
   updateAvailability();
-  showReadout("");
+  showReadout('');
 }
 
 function feed2d(keepView: boolean): void {
   const s = state.surface;
   const stats = state.stats;
   if (!s || !stats || !view2d) return;
-  const regular = s.kind === "grid" && s.x === null;
+  const regular = s.kind === 'grid' && s.x === null;
   view2d.setSurface(regular ? s : null, [stats.min, stats.max], keepView);
 }
 
 // ------------------------------------------------------------------------------------------ profile
 
-function profileSeries(): { values: Float32Array; step: number; count: number; positions: Float32Array | null } {
+function profileSeries(): {
+  values: Float32Array;
+  step: number;
+  count: number;
+  positions: Float32Array | null;
+} {
   const s = state.surface as Surface;
   const irregular = irregularProfile(s);
   if (irregular) {
     // The mean distance between the points stands for the step.
     const { positions } = irregular;
-    const step = (((positions[positions.length - 1] as number) - (positions[0] as number)) / Math.max(positions.length - 1, 1)) || 1;
+    const step =
+      ((positions[positions.length - 1] as number) - (positions[0] as number)) /
+        Math.max(positions.length - 1, 1) || 1;
     return { values: s.z, step, count: 1, positions };
   }
-  if (state.profileAxis === "x") {
+  if (state.profileAxis === 'x') {
     const row = Math.min(state.profileIndex, s.rows - 1);
-    return { values: s.z.slice(row * s.columns, (row + 1) * s.columns), step: s.stepX, count: s.rows, positions: null };
+    return {
+      values: s.z.slice(row * s.columns, (row + 1) * s.columns),
+      step: s.stepX,
+      count: s.rows,
+      positions: null,
+    };
   }
   const column = Math.min(state.profileIndex, s.columns - 1);
   const values = new Float32Array(s.rows);
@@ -325,35 +394,44 @@ function profileSeries(): { values: Float32Array; step: number; count: number; p
 
 function updateProfile(): void {
   const s = state.surface;
-  if (!s || s.kind !== "grid" || (s.x !== null && !irregularProfile(s))) return;
+  if (!s || s.kind !== 'grid' || (s.x !== null && !irregularProfile(s))) return;
   const plot = ensureProfile();
   const { values, step, count, positions } = profileSeries();
-  plot.setSeries(values, step, irregularProfile(s)?.axis ?? state.profileAxis, positions);
-  const slider = $("profileSlider") as HTMLInputElement;
+  plot.setSeries(
+    values,
+    step,
+    irregularProfile(s)?.axis ?? state.profileAxis,
+    positions,
+  );
+  const slider = $('profileSlider') as HTMLInputElement;
   slider.max = String(count);
   slider.value = String(state.profileIndex + 1);
-  const noun = state.profileAxis === "x" ? "Profile" : "Column";
-  $("profileLabel").textContent = `${state.profileIndex + 1} / ${count}`;
-  slider.setAttribute("aria-label", noun);
+  const noun = state.profileAxis === 'x' ? 'Profile' : 'Column';
+  $('profileLabel').textContent = `${state.profileIndex + 1} / ${count}`;
+  slider.setAttribute('aria-label', noun);
   // A profile has no columns to choose along y, and a single column no rows to choose along x.
-  ($("profileDirection").querySelector('[data-axis="x"]') as HTMLButtonElement).disabled = s.columns < 2;
-  ($("profileDirection").querySelector('[data-axis="y"]') as HTMLButtonElement).disabled = s.rows < 2;
-  ($("profileBar") as HTMLElement).dataset.noun = noun;
+  (
+    $('profileDirection').querySelector('[data-axis="x"]') as HTMLButtonElement
+  ).disabled = s.columns < 2;
+  (
+    $('profileDirection').querySelector('[data-axis="y"]') as HTMLButtonElement
+  ).disabled = s.rows < 2;
+  ($('profileBar') as HTMLElement).dataset.noun = noun;
 }
 
 function profileText(index: number): string {
-  if (index < 0 || !profile || !state.surface) return "";
+  if (index < 0 || !profile || !state.surface) return '';
   const value = profile.valueAt(index);
-  const z = Number.isFinite(value) ? formatLength(value) : "not measured";
-  const along = (irregularProfile(state.surface)?.axis ?? state.profileAxis) === "x";
-  return `${along ? "x" : "y"}=${formatLength(profile.positionAt(index))}, z=${z}`;
+  const z = Number.isFinite(value) ? formatLength(value) : 'not measured';
+  const along = (irregularProfile(state.surface)?.axis ?? state.profileAxis) === 'x';
+  return `${along ? 'x' : 'y'}=${formatLength(profile.positionAt(index))}, z=${z}`;
 }
 
 /** Shows where the profile lies on the surface, for as long as the slider is used. */
 function showLocator(): void {
   const s = state.surface;
   const stats = state.stats;
-  if (!s || !stats || s.kind !== "grid" || s.x !== null) return;
+  if (!s || !stats || s.kind !== 'grid' || s.x !== null) return;
   locator.show({
     surface: s,
     range: [stats.min, stats.max],
@@ -365,48 +443,57 @@ function showLocator(): void {
 }
 
 function markAxis(): void {
-  for (const button of document.querySelectorAll<HTMLButtonElement>("#profileDirection button")) {
-    button.setAttribute("aria-pressed", String(button.dataset.axis === state.profileAxis));
+  for (const button of document.querySelectorAll<HTMLButtonElement>(
+    '#profileDirection button',
+  )) {
+    button.setAttribute(
+      'aria-pressed',
+      String(button.dataset.axis === state.profileAxis),
+    );
   }
 }
 
-for (const button of document.querySelectorAll<HTMLButtonElement>("#profileDirection button")) {
-  button.addEventListener("click", () => {
-    state.profileAxis = button.dataset.axis === "y" ? "y" : "x";
+for (const button of document.querySelectorAll<HTMLButtonElement>(
+  '#profileDirection button',
+)) {
+  button.addEventListener('click', () => {
+    state.profileAxis = button.dataset.axis === 'y' ? 'y' : 'x';
     const s = state.surface as Surface;
-    state.profileIndex = Math.floor((state.profileAxis === "x" ? s.rows : s.columns) / 2);
+    state.profileIndex = Math.floor(
+      (state.profileAxis === 'x' ? s.rows : s.columns) / 2,
+    );
     markAxis();
     updateProfile();
     showLocator();
   });
 }
-$("profileSlider").addEventListener("input", (event) => {
+$('profileSlider').addEventListener('input', (event) => {
   state.profileIndex = Number((event.target as HTMLInputElement).value) - 1;
   updateProfile();
   showLocator();
 });
-$("profileSlider").addEventListener("pointerdown", () => {
+$('profileSlider').addEventListener('pointerdown', () => {
   locator.hold();
   showLocator();
-  window.addEventListener("pointerup", () => locator.release(), { once: true });
-  window.addEventListener("pointercancel", () => locator.release(), { once: true });
+  window.addEventListener('pointerup', () => locator.release(), { once: true });
+  window.addEventListener('pointercancel', () => locator.release(), { once: true });
 });
 
 // ----------------------------------------------------------------------------------------- information
 
 function renderInfo(): void {
-  const body = $("infoBody");
+  const body = $('infoBody');
   body.replaceChildren();
   const file = state.file;
   if (!file) return;
   for (const section of file.info) {
-    const heading = document.createElement("h3");
+    const heading = document.createElement('h3');
     heading.textContent = section.title;
-    const list = document.createElement("dl");
+    const list = document.createElement('dl');
     for (const [label, value] of section.rows) {
-      const term = document.createElement("dt");
+      const term = document.createElement('dt');
       term.textContent = label;
-      const description = document.createElement("dd");
+      const description = document.createElement('dd');
       description.textContent = value;
       list.append(term, description);
     }
@@ -416,24 +503,30 @@ function renderInfo(): void {
 
 const isHidden = (id: string): boolean => $(id).hidden !== false;
 
-const PANELS = { display: "displayButton", drawer: "infoButton", about: "aboutButton" } as const;
+const PANELS = {
+  display: 'displayButton',
+  drawer: 'infoButton',
+  about: 'aboutButton',
+} as const;
 
 /** Shows or hides a panel; only one is open at a time. */
 function setPanel(id: keyof typeof PANELS, open: boolean): void {
   for (const [name, button] of Object.entries(PANELS)) {
     const show = name === id && open;
     $(name).hidden = !show;
-    $(button).setAttribute("aria-expanded", String(show));
+    $(button).setAttribute('aria-expanded', String(show));
   }
 }
 
-$("displayButton").addEventListener("click", () => setPanel("display", isHidden("display")));
-$("infoButton").addEventListener("click", () => setPanel("drawer", isHidden("drawer")));
-$("aboutButton").addEventListener("click", () => setPanel("about", isHidden("about")));
+$('displayButton').addEventListener('click', () =>
+  setPanel('display', isHidden('display')),
+);
+$('infoButton').addEventListener('click', () => setPanel('drawer', isHidden('drawer')));
+$('aboutButton').addEventListener('click', () => setPanel('about', isHidden('about')));
 
 // ---------------------------------------------------------------------------------------------- display
 
-const colormapSelect = $("colormapSelect") as HTMLSelectElement;
+const colormapSelect = $('colormapSelect') as HTMLSelectElement;
 for (const name of colormapNames()) colormapSelect.add(new Option(name, name));
 colormapSelect.value = state.colormap;
 
@@ -444,69 +537,80 @@ function applyColormap(): void {
   if (state.stats) colorbar.update(lut, [state.stats.min, state.stats.max]);
 }
 
-colormapSelect.addEventListener("change", () => {
+colormapSelect.addEventListener('change', () => {
   state.colormap = colormapSelect.value;
   applyColormap();
 });
-$("reverseCheck").addEventListener("change", (event) => {
+$('reverseCheck').addEventListener('change', (event) => {
   state.reverse = (event.target as HTMLInputElement).checked;
   applyColormap();
 });
-for (const button of document.querySelectorAll<HTMLButtonElement>("#modeButtons button")) {
-  button.addEventListener("click", () => {
+for (const button of document.querySelectorAll<HTMLButtonElement>(
+  '#modeButtons button',
+)) {
+  button.addEventListener('click', () => {
     state.mode = button.dataset.mode as RenderMode;
-    for (const other of document.querySelectorAll<HTMLButtonElement>("#modeButtons button")) {
-      other.setAttribute("aria-pressed", String(other === button));
+    for (const other of document.querySelectorAll<HTMLButtonElement>(
+      '#modeButtons button',
+    )) {
+      other.setAttribute('aria-pressed', String(other === button));
     }
     view3d?.setRenderMode(state.mode);
   });
 }
 
-const zSlider = $("zSlider") as HTMLInputElement;
+const zSlider = $('zSlider') as HTMLInputElement;
 const SLIDER_MAX = 1000;
 const logMin = Math.log10(Z_FACTOR_MIN);
 const logMax = Math.log10(Z_FACTOR_MAX);
-const sliderToFactor = (position: number): number => 10 ** (logMin + (position / SLIDER_MAX) * (logMax - logMin));
-const factorToSlider = (factor: number): number => Math.round(((Math.log10(factor) - logMin) / (logMax - logMin)) * SLIDER_MAX);
+const sliderToFactor = (position: number): number =>
+  10 ** (logMin + (position / SLIDER_MAX) * (logMax - logMin));
+const factorToSlider = (factor: number): number =>
+  Math.round(((Math.log10(factor) - logMin) / (logMax - logMin)) * SLIDER_MAX);
 
 function setZFactor(factor: number): void {
   state.zFactor = Math.min(Math.max(factor, Z_FACTOR_MIN), Z_FACTOR_MAX);
   zSlider.value = String(factorToSlider(state.zFactor));
-  $("zOutput").textContent = `×${Number(state.zFactor.toPrecision(3))}`;
+  $('zOutput').textContent = `×${Number(state.zFactor.toPrecision(3))}`;
   view3d?.setZFactor(state.zFactor);
 }
 
-zSlider.addEventListener("input", () => {
+zSlider.addEventListener('input', () => {
   // Close to true scale the slider snaps to 1, so that it is easy to return to.
   let factor = sliderToFactor(Number(zSlider.value));
   if (Math.abs(Math.log10(factor)) < 0.03) factor = 1;
   setZFactor(factor);
 });
-$("zReset").addEventListener("click", () => setZFactor(1));
+$('zReset').addEventListener('click', () => setZFactor(1));
 setZFactor(1);
 
 // ------------------------------------------------------------------------------------------------ tools
 
-for (const button of document.querySelectorAll<HTMLButtonElement>(".tool[data-tool]")) {
-  button.addEventListener("click", () => {
+for (const button of document.querySelectorAll<HTMLButtonElement>('.tool[data-tool]')) {
+  button.addEventListener('click', () => {
     state.tool = button.dataset.tool as Tool;
     updateTools();
   });
 }
 
-function activeView(): { home(): void; zoomIn(): void; zoomOut(): void; snapshot(): Promise<Blob> } | null {
-  return state.view === "3d" ? view3d : state.view === "2d" ? view2d : profile;
+function activeView(): {
+  home(): void;
+  zoomIn(): void;
+  zoomOut(): void;
+  snapshot(): Promise<Blob>;
+} | null {
+  return state.view === '3d' ? view3d : state.view === '2d' ? view2d : profile;
 }
-$("homeButton").addEventListener("click", () => activeView()?.home());
-$("zoomInButton").addEventListener("click", () => activeView()?.zoomIn());
-$("zoomOutButton").addEventListener("click", () => activeView()?.zoomOut());
+$('homeButton').addEventListener('click', () => activeView()?.home());
+$('zoomInButton').addEventListener('click', () => activeView()?.zoomIn());
+$('zoomOutButton').addEventListener('click', () => activeView()?.zoomOut());
 
-for (const button of document.querySelectorAll<HTMLButtonElement>(".views button")) {
-  button.addEventListener("click", () => setView(button.dataset.view as ViewName));
+for (const button of document.querySelectorAll<HTMLButtonElement>('.views button')) {
+  button.addEventListener('click', () => setView(button.dataset.view as ViewName));
 }
 
-$("layerPrev").addEventListener("click", () => stepLayer(-1));
-$("layerNext").addEventListener("click", () => stepLayer(1));
+$('layerPrev').addEventListener('click', () => stepLayer(-1));
+$('layerNext').addEventListener('click', () => stepLayer(1));
 
 function stepLayer(delta: number): void {
   const file = state.file;
@@ -520,9 +624,12 @@ function stepLayer(delta: number): void {
 }
 
 /** The picture of the view, with the color bar: over the picture in 3D, next to it in 2D. */
-async function screenshot(view: { snapshot(): Promise<Blob> }, host: HTMLElement): Promise<Blob> {
+async function screenshot(
+  view: { snapshot(): Promise<Blob> },
+  host: HTMLElement,
+): Promise<Blob> {
   const picture = await view.snapshot();
-  const bar = $("colorbarBox");
+  const bar = $('colorbarBox');
   if (bar.hidden !== false) return picture;
   const image = await createImageBitmap(picture);
   const hostRect = host.getBoundingClientRect();
@@ -532,14 +639,18 @@ async function screenshot(view: { snapshot(): Promise<Blob> }, host: HTMLElement
   const top = Math.min(hostRect.top, barRect.top);
   const width = Math.max(hostRect.right, barRect.right) - left;
   const height = Math.max(hostRect.bottom, barRect.bottom) - top;
-  const canvas = document.createElement("canvas");
+  const canvas = document.createElement('canvas');
   canvas.width = Math.round(width * ratio);
   canvas.height = Math.round(height * ratio);
-  const context = canvas.getContext("2d") as CanvasRenderingContext2D;
+  const context = canvas.getContext('2d') as CanvasRenderingContext2D;
   const colors = cssColors();
   context.fillStyle = colors.background;
   context.fillRect(0, 0, canvas.width, canvas.height);
-  context.drawImage(image, (hostRect.left - left) * ratio, (hostRect.top - top) * ratio);
+  context.drawImage(
+    image,
+    (hostRect.left - left) * ratio,
+    (hostRect.top - top) * ratio,
+  );
   const x = (barRect.left - left) * ratio;
   const y = (barRect.top - top) * ratio;
   context.beginPath();
@@ -549,18 +660,31 @@ async function screenshot(view: { snapshot(): Promise<Blob> }, host: HTMLElement
   context.strokeStyle = colors.border;
   context.lineWidth = ratio;
   context.stroke();
-  context.drawImage($<HTMLCanvasElement>("colorbar"), x, y, barRect.width * ratio, barRect.height * ratio);
-  return new Promise((resolve, reject) => canvas.toBlob((blob) => (blob ? resolve(blob) : reject(new Error("No image"))), "image/png"));
+  context.drawImage(
+    $<HTMLCanvasElement>('colorbar'),
+    x,
+    y,
+    barRect.width * ratio,
+    barRect.height * ratio,
+  );
+  return new Promise((resolve, reject) =>
+    canvas.toBlob(
+      (blob) => (blob ? resolve(blob) : reject(new Error('No image'))),
+      'image/png',
+    ),
+  );
 }
 
-$("shotButton").addEventListener("click", async () => {
+$('shotButton').addEventListener('click', async () => {
   const view = activeView();
   if (!view || !state.file) return;
-  const host = $(state.view === "3d" ? "view3d" : state.view === "2d" ? "view2d" : "viewProfile");
+  const host = $(
+    state.view === '3d' ? 'view3d' : state.view === '2d' ? 'view2d' : 'viewProfile',
+  );
   const blob = await screenshot(view, host);
-  const link = document.createElement("a");
+  const link = document.createElement('a');
   link.href = URL.createObjectURL(blob);
-  link.download = `${state.file.name.replace(/\.[^.]+$/, "")}-${state.view}.png`;
+  link.download = `${state.file.name.replace(/\.[^.]+$/, '')}-${state.view}.png`;
   link.click();
   setTimeout(() => URL.revokeObjectURL(link.href), 10_000);
 });
@@ -568,17 +692,17 @@ $("shotButton").addEventListener("click", async () => {
 // --------------------------------------------------------------------------------------- readout
 
 function showReadout(text: string): void {
-  const element = $("readout");
+  const element = $('readout');
   const stats = state.stats;
   const s = state.surface;
   if (text) {
     element.textContent = text;
-    element.classList.add("live");
+    element.classList.add('live');
     return;
   }
-  element.classList.remove("live");
+  element.classList.remove('live');
   if (!s || !stats) {
-    element.textContent = "";
+    element.textContent = '';
     return;
   }
   const { extent } = state;
@@ -586,19 +710,21 @@ function showReadout(text: string): void {
   if (extent) {
     // A regular grid covers its points times the step; otherwise the span of the positions is used.
     // The extent across a profile counts if the positions vary, as along a diagonal.
-    const spans = (axis: "x" | "y"): boolean => extent[axis][1] > extent[axis][0];
-    if (s.kind === "cloud" || s.columns > 1 || (s.x && spans("x"))) field.push(s.x ? extent.x[1] - extent.x[0] : s.columns * s.stepX);
-    if (s.kind === "cloud" || s.rows > 1 || (s.y && spans("y"))) field.push(s.y ? extent.y[1] - extent.y[0] : s.rows * s.stepY);
+    const spans = (axis: 'x' | 'y'): boolean => extent[axis][1] > extent[axis][0];
+    if (s.kind === 'cloud' || s.columns > 1 || (s.x && spans('x')))
+      field.push(s.x ? extent.x[1] - extent.x[0] : s.columns * s.stepX);
+    if (s.kind === 'cloud' || s.rows > 1 || (s.y && spans('y')))
+      field.push(s.y ? extent.y[1] - extent.y[0] : s.rows * s.stepY);
   }
   element.textContent = `FOV ${formatExtent(field)}, PV ${formatLength(stats.max - stats.min)}`;
 }
 
 // ------------------------------------------------------------------------------------------ opening files
 
-const fileInput = $("fileInput") as HTMLInputElement;
+const fileInput = $('fileInput') as HTMLInputElement;
 const choose = (): void => fileInput.click();
-$("openButton").addEventListener("click", choose);
-$("landingOpen").addEventListener("click", choose);
+$('openButton').addEventListener('click', choose);
+$('landingOpen').addEventListener('click', choose);
 
 async function openFile(file: File): Promise<void> {
   setBusy(`Reading ${file.name}`);
@@ -606,39 +732,39 @@ async function openFile(file: File): Promise<void> {
   await openBytes(bytes, file.name);
 }
 
-fileInput.addEventListener("change", () => {
+fileInput.addEventListener('change', () => {
   const file = fileInput.files?.[0];
   if (file) void openFile(file);
-  fileInput.value = "";
+  fileInput.value = '';
 });
 
 let dragDepth = 0;
-window.addEventListener("dragenter", (event) => {
-  if (!event.dataTransfer?.types.includes("Files")) return;
+window.addEventListener('dragenter', (event) => {
+  if (!event.dataTransfer?.types.includes('Files')) return;
   event.preventDefault();
   dragDepth++;
-  $("dropHint").hidden = false;
+  $('dropHint').hidden = false;
 });
-window.addEventListener("dragover", (event) => {
-  if (event.dataTransfer?.types.includes("Files")) event.preventDefault();
+window.addEventListener('dragover', (event) => {
+  if (event.dataTransfer?.types.includes('Files')) event.preventDefault();
 });
-window.addEventListener("dragleave", () => {
+window.addEventListener('dragleave', () => {
   dragDepth = Math.max(dragDepth - 1, 0);
-  if (dragDepth === 0) $("dropHint").hidden = true;
+  if (dragDepth === 0) $('dropHint').hidden = true;
 });
-window.addEventListener("drop", (event) => {
+window.addEventListener('drop', (event) => {
   event.preventDefault();
   dragDepth = 0;
-  $("dropHint").hidden = true;
+  $('dropHint').hidden = true;
   const file = event.dataTransfer?.files[0];
   if (file) void openFile(file);
 });
 
 for (const sample of SAMPLES) {
-  const button = document.createElement("button");
-  button.className = "button";
+  const button = document.createElement('button');
+  button.className = 'button';
   button.textContent = `${sample.title} · ${sample.kind}`;
-  button.addEventListener("click", async () => {
+  button.addEventListener('click', async () => {
     setBusy(`Reading ${sample.file}`);
     try {
       const response = await fetch(sample.url);
@@ -648,7 +774,7 @@ for (const sample of SAMPLES) {
       toast(error instanceof Error ? error.message : String(error));
     }
   });
-  $("sampleList").append(button);
+  $('sampleList').append(button);
 }
 
 applyColors();

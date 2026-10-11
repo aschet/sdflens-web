@@ -16,7 +16,11 @@ const MIN_DISTANCE_FACTOR = 0.05;
 const MAX_DISTANCE_FACTOR = 50;
 const DEG = Math.PI / 180;
 
-const cross = (a: Vec3, b: Vec3): Vec3 => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
+const cross = (a: Vec3, b: Vec3): Vec3 => [
+  a[1] * b[2] - a[2] * b[1],
+  a[2] * b[0] - a[0] * b[2],
+  a[0] * b[1] - a[1] * b[0],
+];
 const normalize = (a: Vec3): Vec3 => {
   const length = Math.hypot(...a);
   return [a[0] / length, a[1] / length, a[2] / length];
@@ -52,7 +56,10 @@ export class Camera {
 
   rotate(dx: number, dy: number): void {
     this.azimuth -= dx * ROTATE_DEGREES_PER_PIXEL;
-    this.elevation = Math.min(Math.max(this.elevation + dy * ROTATE_DEGREES_PER_PIXEL, -MAX_ELEVATION), MAX_ELEVATION);
+    this.elevation = Math.min(
+      Math.max(this.elevation + dy * ROTATE_DEGREES_PER_PIXEL, -MAX_ELEVATION),
+      MAX_ELEVATION,
+    );
   }
 
   setView(azimuth: number, elevation: number): void {
@@ -63,22 +70,34 @@ export class Camera {
   /** Moves the target in the view plane by a mouse movement in pixels. */
   pan(dx: number, dy: number, viewportHeight: number): void {
     const [right, up] = this.axes();
-    const perPixel = (2 * this.distance * Math.tan((FOV_DEGREES * DEG) / 2)) / Math.max(viewportHeight, 1);
+    const perPixel =
+      (2 * this.distance * Math.tan((FOV_DEGREES * DEG) / 2)) /
+      Math.max(viewportHeight, 1);
     for (let i = 0; i < 3; i++) {
-      this.target[i] = (this.target[i] as number) - (right[i] as number) * dx * perPixel + (up[i] as number) * dy * perPixel;
+      this.target[i] =
+        (this.target[i] as number) -
+        (right[i] as number) * dx * perPixel +
+        (up[i] as number) * dy * perPixel;
     }
   }
 
   /** Moves towards the target for a factor above 1 and away from it below. */
   zoom(factor: number): void {
     if (factor <= 0) return;
-    this.distance = Math.min(Math.max(this.distance / factor, this.radius * MIN_DISTANCE_FACTOR), this.radius * MAX_DISTANCE_FACTOR);
+    this.distance = Math.min(
+      Math.max(this.distance / factor, this.radius * MIN_DISTANCE_FACTOR),
+      this.radius * MAX_DISTANCE_FACTOR,
+    );
   }
 
   eye(): Vec3 {
     const az = this.azimuth * DEG;
     const el = this.elevation * DEG;
-    const direction: Vec3 = [Math.cos(el) * Math.cos(az), Math.cos(el) * Math.sin(az), Math.sin(el)];
+    const direction: Vec3 = [
+      Math.cos(el) * Math.cos(az),
+      Math.cos(el) * Math.sin(az),
+      Math.sin(el),
+    ];
     return [
       this.target[0] + direction[0] * this.distance,
       this.target[1] + direction[1] * this.distance,
@@ -92,17 +111,35 @@ export class Camera {
     const eye = this.eye();
     const rows: Vec3[] = [right, up, [-forward[0], -forward[1], -forward[2]]];
     const view = [
-      ...rows.flatMap((row) => [...row, -(row[0] * eye[0] + row[1] * eye[1] + row[2] * eye[2])]),
-      0, 0, 0, 1,
+      ...rows.flatMap((row) => [
+        ...row,
+        -(row[0] * eye[0] + row[1] * eye[1] + row[2] * eye[2]),
+      ]),
+      0,
+      0,
+      0,
+      1,
     ];
     const near = Math.max(this.distance - 1.5 * this.radius, this.distance * 0.01);
     const far = this.distance + 1.5 * this.radius;
     const focal = 1 / Math.tan((FOV_DEGREES * DEG) / 2);
     const proj = [
-      focal / Math.max(aspect, 1e-6), 0, 0, 0,
-      0, focal, 0, 0,
-      0, 0, -(far + near) / (far - near), (-2 * far * near) / (far - near),
-      0, 0, -1, 0,
+      focal / Math.max(aspect, 1e-6),
+      0,
+      0,
+      0,
+      0,
+      focal,
+      0,
+      0,
+      0,
+      0,
+      -(far + near) / (far - near),
+      (-2 * far * near) / (far - near),
+      0,
+      0,
+      -1,
+      0,
     ];
     return { view, proj };
   }
@@ -110,7 +147,11 @@ export class Camera {
   /** The right, up and forward unit vectors of the view. */
   axes(): [Vec3, Vec3, Vec3] {
     const eye = this.eye();
-    const forward = normalize([this.target[0] - eye[0], this.target[1] - eye[1], this.target[2] - eye[2]]);
+    const forward = normalize([
+      this.target[0] - eye[0],
+      this.target[1] - eye[1],
+      this.target[2] - eye[2],
+    ]);
     const right = normalize(cross(forward, [0, 0, 1]));
     const up = cross(right, forward);
     return [right, up, forward];
@@ -122,7 +163,8 @@ export function multiply(a: Mat4, b: Mat4): Mat4 {
   for (let r = 0; r < 4; r++) {
     for (let c = 0; c < 4; c++) {
       let sum = 0;
-      for (let k = 0; k < 4; k++) sum += (a[r * 4 + k] as number) * (b[k * 4 + c] as number);
+      for (let k = 0; k < 4; k++)
+        sum += (a[r * 4 + k] as number) * (b[k * 4 + c] as number);
       out[r * 4 + c] = sum;
     }
   }
@@ -132,6 +174,7 @@ export function multiply(a: Mat4, b: Mat4): Mat4 {
 /** The column-major array that WebGL takes. */
 export function columnMajor(matrix: Mat4): Float32Array {
   const out = new Float32Array(16);
-  for (let r = 0; r < 4; r++) for (let c = 0; c < 4; c++) out[c * 4 + r] = matrix[r * 4 + c] as number;
+  for (let r = 0; r < 4; r++)
+    for (let c = 0; c < 4; c++) out[c * 4 + r] = matrix[r * 4 + c] as number;
   return out;
 }

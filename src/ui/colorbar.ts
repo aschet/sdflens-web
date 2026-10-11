@@ -4,7 +4,7 @@
 
 /** The color scale of the view: a gradient with ticks. */
 
-import { formatTick, niceTicks, unitFor } from "../units";
+import { formatTick, niceTicks, unitFor } from '../units';
 
 const BAR_LEFT = 9;
 const BAR_WIDTH = 14;
@@ -14,7 +14,7 @@ const BOTTOM = 10;
 export class Colorbar {
   private lut: Uint8Array | null = null;
   private range: [number, number] | null = null;
-  private foreground = "#e6e6e6";
+  private foreground = '#e6e6e6';
   private readonly observer: ResizeObserver;
 
   constructor(private readonly canvas: HTMLCanvasElement) {
@@ -40,7 +40,7 @@ export class Colorbar {
     if (width === 0 || height === 0) return;
     this.canvas.width = Math.round(width * ratio);
     this.canvas.height = Math.round(height * ratio);
-    const context = this.canvas.getContext("2d") as CanvasRenderingContext2D;
+    const context = this.canvas.getContext('2d') as CanvasRenderingContext2D;
     context.setTransform(ratio, 0, 0, ratio, 0, 0);
     context.clearRect(0, 0, width, height);
     const lut = this.lut;
@@ -63,11 +63,15 @@ export class Colorbar {
     const [lo, hi] = range;
     const [factor, symbol] = unitFor(Math.max(Math.abs(lo), Math.abs(hi)));
     context.fillStyle = this.foreground;
-    context.font = "12px system-ui, sans-serif";
-    context.textAlign = "left";
+    context.font = '12px system-ui, sans-serif';
+    context.textAlign = 'left';
     context.fillText(symbol, BAR_LEFT, 17);
     if (hi > lo) {
-      for (const tick of niceTicks(lo, hi, Math.max(2, Math.floor(barHeight / 30) + 1))) {
+      for (const tick of niceTicks(
+        lo,
+        hi,
+        Math.max(2, Math.floor(barHeight / 30) + 1),
+      )) {
         const y = Math.round(TOP + ((hi - tick) / (hi - lo)) * barHeight) + 0.5;
         const x = BAR_LEFT + BAR_WIDTH;
         context.beginPath();

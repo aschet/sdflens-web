@@ -5,17 +5,17 @@
 /** SI unit prefixes, tick generation and number formatting for lengths in meters. */
 
 const UNITS: [number, string][] = [
-  [1e-12, "pm"],
-  [1e-9, "nm"],
-  [1e-6, "µm"],
-  [1e-3, "mm"],
-  [1e-2, "cm"],
-  [1, "m"],
+  [1e-12, 'pm'],
+  [1e-9, 'nm'],
+  [1e-6, 'µm'],
+  [1e-3, 'mm'],
+  [1e-2, 'cm'],
+  [1, 'm'],
 ];
 
 /** The factor and symbol of the largest SI length unit not exceeding ``magnitude``; meters if it is no length. */
 export function unitFor(magnitude: number): [number, string] {
-  if (!Number.isFinite(magnitude) || magnitude <= 0) return [1, "m"];
+  if (!Number.isFinite(magnitude) || magnitude <= 0) return [1, 'm'];
   let chosen = UNITS[0] as [number, string];
   for (const unit of UNITS) {
     if (magnitude >= unit[0] * 0.999) chosen = unit;
@@ -30,7 +30,7 @@ function significant(value: number, digits: number): string {
 
 /** Formats a length in meters with a suitable SI prefix, as in "1.5 µm". */
 export function formatLength(value: number, digits = 4): string {
-  if (!Number.isFinite(value)) return "n/a";
+  if (!Number.isFinite(value)) return 'n/a';
   const [factor, symbol] = unitFor(Math.abs(value));
   return `${significant(value / factor, digits)} ${symbol}`;
 }
@@ -40,9 +40,9 @@ export function formatExtent(extents: number[], digits = 4): string {
   const largest = Math.max(...extents);
   const [factor, symbol] = unitFor(largest);
   if (extents.every((value) => value === 0 || value / factor >= 0.1)) {
-    return `${extents.map((value) => significant(value / factor, digits)).join(" × ")} ${symbol}`;
+    return `${extents.map((value) => significant(value / factor, digits)).join(' × ')} ${symbol}`;
   }
-  return extents.map((value) => formatLength(value, digits)).join(" × ");
+  return extents.map((value) => formatLength(value, digits)).join(' × ');
 }
 
 /** Formats ``value`` divided by the unit ``factor`` without floating point noise. */
@@ -86,5 +86,9 @@ function ticksAt(lo: number, hi: number, step: number): number[] {
 function smaller(step: number): number {
   const magnitude = 10 ** Math.floor(Math.log10(step) + 1e-9);
   const mantissa = Math.round(step / magnitude);
-  return mantissa >= 5 ? 2 * magnitude : mantissa >= 2 ? magnitude : 5 * (magnitude / 10);
+  return mantissa >= 5
+    ? 2 * magnitude
+    : mantissa >= 2
+      ? magnitude
+      : 5 * (magnitude / 10);
 }

@@ -4,7 +4,7 @@
 
 /** Axes of the 2D and the profile view: grid, major and minor ticks, and titles. */
 
-import { formatTick, niceTicks, unitFor } from "../units";
+import { formatTick, niceTicks, unitFor } from '../units';
 
 export interface Box {
   left: number;
@@ -45,7 +45,11 @@ function minorTicks(lo: number, hi: number, major: number[]): number[] {
   const step = (major[1] as number) - (major[0] as number);
   const minorStep = step / minorDivisions(step);
   const ticks: number[] = [];
-  for (let k = Math.ceil(lo / minorStep - 1e-9); k * minorStep <= hi + minorStep * 1e-9; k++) {
+  for (
+    let k = Math.ceil(lo / minorStep - 1e-9);
+    k * minorStep <= hi + minorStep * 1e-9;
+    k++
+  ) {
     const value = k * minorStep;
     const onMajor = Math.abs(value / step - Math.round(value / step)) < 1e-6;
     if (!onMajor) ticks.push(value);
@@ -54,12 +58,26 @@ function minorTicks(lo: number, hi: number, major: number[]): number[] {
 }
 
 /** The ticks of an axis for its length in pixels. */
-function ticksFor(axis: AxisSpec, length: number, spacing: number): { major: number[]; minor: number[] } {
-  const major = niceTicks(axis.lo, axis.hi, Math.max(2, Math.floor(length / spacing) + 1));
+function ticksFor(
+  axis: AxisSpec,
+  length: number,
+  spacing: number,
+): { major: number[]; minor: number[] } {
+  const major = niceTicks(
+    axis.lo,
+    axis.hi,
+    Math.max(2, Math.floor(length / spacing) + 1),
+  );
   let minor = minorTicks(axis.lo, axis.hi, major);
   if (major.length >= 2) {
-    const pixels = Math.abs(axis.toScreen(major[1] as number) - axis.toScreen(major[0] as number));
-    if (pixels / minorDivisions((major[1] as number) - (major[0] as number)) < MIN_MINOR_SPACING) minor = [];
+    const pixels = Math.abs(
+      axis.toScreen(major[1] as number) - axis.toScreen(major[0] as number),
+    );
+    if (
+      pixels / minorDivisions((major[1] as number) - (major[0] as number)) <
+      MIN_MINOR_SPACING
+    )
+      minor = [];
   }
   return { major, minor };
 }
@@ -69,7 +87,11 @@ function ticksFor(axis: AxisSpec, length: number, spacing: number): { major: num
  * a title for each axis. The context is left unclipped; the grid is clipped to the box.
  */
 export function drawAxes(
-  context: CanvasRenderingContext2D, box: Box, x: AxisSpec, y: AxisSpec, colors: Colors,
+  context: CanvasRenderingContext2D,
+  box: Box,
+  x: AxisSpec,
+  y: AxisSpec,
+  colors: Colors,
   options: { grid: boolean; zeroLine?: boolean },
 ): void {
   const right = box.left + box.width;
@@ -96,8 +118,10 @@ export function drawAxes(
     context.clip();
     context.strokeStyle = colors.muted;
     context.globalAlpha = 0.16;
-    for (const tick of xTicks.major) line(x.toScreen(tick), box.top, x.toScreen(tick), bottom);
-    for (const tick of yTicks.major) line(box.left, y.toScreen(tick), right, y.toScreen(tick));
+    for (const tick of xTicks.major)
+      line(x.toScreen(tick), box.top, x.toScreen(tick), bottom);
+    for (const tick of yTicks.major)
+      line(box.left, y.toScreen(tick), right, y.toScreen(tick));
     if (options.zeroLine && y.lo < 0 && y.hi > 0) {
       context.globalAlpha = 0.5;
       context.setLineDash([4, 4]);
@@ -111,32 +135,46 @@ export function drawAxes(
   context.globalAlpha = 0.85;
   line(box.left, box.top, box.left, bottom);
   line(box.left, bottom, right, bottom);
-  for (const tick of xTicks.minor) line(x.toScreen(tick), bottom, x.toScreen(tick), bottom + MINOR);
-  for (const tick of yTicks.minor) line(box.left, y.toScreen(tick), box.left - MINOR, y.toScreen(tick));
+  for (const tick of xTicks.minor)
+    line(x.toScreen(tick), bottom, x.toScreen(tick), bottom + MINOR);
+  for (const tick of yTicks.minor)
+    line(box.left, y.toScreen(tick), box.left - MINOR, y.toScreen(tick));
   context.globalAlpha = 1;
-  for (const tick of xTicks.major) line(x.toScreen(tick), bottom, x.toScreen(tick), bottom + MAJOR);
-  for (const tick of yTicks.major) line(box.left, y.toScreen(tick), box.left - MAJOR, y.toScreen(tick));
+  for (const tick of xTicks.major)
+    line(x.toScreen(tick), bottom, x.toScreen(tick), bottom + MAJOR);
+  for (const tick of yTicks.major)
+    line(box.left, y.toScreen(tick), box.left - MAJOR, y.toScreen(tick));
 
   context.fillStyle = colors.muted;
-  context.textAlign = "center";
-  for (const tick of xTicks.major) context.fillText(formatTick(tick, xFactor), x.toScreen(tick), bottom + MAJOR + 13);
-  context.textAlign = "right";
-  for (const tick of yTicks.major) context.fillText(formatTick(tick, yFactor), box.left - MAJOR - 3, y.toScreen(tick) + 4);
+  context.textAlign = 'center';
+  for (const tick of xTicks.major)
+    context.fillText(formatTick(tick, xFactor), x.toScreen(tick), bottom + MAJOR + 13);
+  context.textAlign = 'right';
+  for (const tick of yTicks.major)
+    context.fillText(
+      formatTick(tick, yFactor),
+      box.left - MAJOR - 3,
+      y.toScreen(tick) + 4,
+    );
 
   // The titles: the unit follows the name, so that the labels stay short.
   context.fillStyle = colors.foreground;
   context.font = `600 ${FONT}`;
-  context.textAlign = "right";
+  context.textAlign = 'right';
   context.fillText(`${x.title} (${xSymbol})`, right, bottom + MAJOR + 25);
   context.save();
   // The title of the y axis stands next to the labels, but not beyond the left edge.
   let widest = 0;
   context.font = FONT;
-  for (const tick of yTicks.major) widest = Math.max(widest, context.measureText(formatTick(tick, yFactor)).width);
+  for (const tick of yTicks.major)
+    widest = Math.max(widest, context.measureText(formatTick(tick, yFactor)).width);
   context.font = `600 ${FONT}`;
-  context.translate(Math.max(10, box.left - MAJOR - 3 - widest - 8), box.top + box.height / 2);
+  context.translate(
+    Math.max(10, box.left - MAJOR - 3 - widest - 8),
+    box.top + box.height / 2,
+  );
   context.rotate(-Math.PI / 2);
-  context.textAlign = "center";
+  context.textAlign = 'center';
   context.fillText(`${y.title} (${ySymbol})`, 0, 0);
   context.restore();
   context.restore();

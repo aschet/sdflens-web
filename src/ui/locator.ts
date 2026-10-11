@@ -4,12 +4,12 @@
 
 /** A small map of the surface that shows where the profile lies while the slider moves. */
 
-import type { Surface } from "../model";
-import { reduce } from "../render/view2d";
-import { formatLength } from "../units";
+import type { Surface } from '../model';
+import { reduce } from '../render/view2d';
+import { formatLength } from '../units';
 
 const HIDE_DELAY = 1200;
-const LINE = "#ff9a1f";
+const LINE = '#ff9a1f';
 const MAX_ELONGATION = 4;
 /** The width that the caption needs, so that the card does not change its width while the caption changes. */
 const CAPTION_WIDTH = 76;
@@ -20,14 +20,20 @@ export interface Placement {
   /** The colors, built only when the map has to be drawn again, and what they depend on. */
   lut: () => Uint8Array;
   lutKey: string;
-  axis: "x" | "y";
+  axis: 'x' | 'y';
   index: number;
 }
 
 export class Locator {
-  private readonly canvas = document.createElement("canvas");
-  private readonly caption = document.createElement("span");
-  private cache: { surface: Surface; key: string; width: number; height: number; image: HTMLCanvasElement } | null = null;
+  private readonly canvas = document.createElement('canvas');
+  private readonly caption = document.createElement('span');
+  private cache: {
+    surface: Surface;
+    key: string;
+    width: number;
+    height: number;
+    image: HTMLCanvasElement;
+  } | null = null;
   private timer = 0;
   private held = false;
 
@@ -40,10 +46,13 @@ export class Locator {
     const { surface: s } = p;
     if (s.rows < 2 || s.columns < 2) return;
     const ratio = window.devicePixelRatio || 1;
-    const narrow = window.matchMedia("(max-width: 760px)").matches;
+    const narrow = window.matchMedia('(max-width: 760px)').matches;
     const [boxWidth, boxHeight] = narrow ? [112, 84] : [160, 120];
     // A very long surface is shown less elongated, so that the map stays big enough to show the line.
-    const aspect = Math.min(Math.max((s.columns * s.stepX) / (s.rows * s.stepY), 1 / MAX_ELONGATION), MAX_ELONGATION);
+    const aspect = Math.min(
+      Math.max((s.columns * s.stepX) / (s.rows * s.stepY), 1 / MAX_ELONGATION),
+      MAX_ELONGATION,
+    );
     const cssWidth = Math.max(Math.round(Math.min(boxWidth, boxHeight * aspect)), 1);
     const cssHeight = Math.max(Math.round(cssWidth / aspect), 1);
     const width = Math.round(cssWidth * ratio);
@@ -51,7 +60,13 @@ export class Locator {
 
     const key = `${p.lutKey}|${width}x${height}`;
     if (!this.cache || this.cache.surface !== s || this.cache.key !== key) {
-      this.cache = { surface: s, key, width, height, image: this.render(p, width, height) };
+      this.cache = {
+        surface: s,
+        key,
+        width,
+        height,
+        image: this.render(p, width, height),
+      };
     }
 
     this.element.style.width = `${Math.max(cssWidth, CAPTION_WIDTH) + 14}px`;
@@ -59,7 +74,7 @@ export class Locator {
     this.canvas.style.height = `${cssHeight}px`;
     this.canvas.width = width;
     this.canvas.height = height;
-    const context = this.canvas.getContext("2d") as CanvasRenderingContext2D;
+    const context = this.canvas.getContext('2d') as CanvasRenderingContext2D;
     // The first row of the surface is at the bottom, as in the 2D view.
     context.save();
     context.translate(0, height);
@@ -68,7 +83,7 @@ export class Locator {
     context.drawImage(this.cache.image, 0, 0, width, height);
     context.restore();
 
-    const along = p.axis === "x";
+    const along = p.axis === 'x';
     context.beginPath();
     if (along) {
       const y = Math.round(height * (1 - (p.index + 0.5) / s.rows)) + 0.5;
@@ -79,16 +94,18 @@ export class Locator {
       context.moveTo(x, 0);
       context.lineTo(x, height);
     }
-    context.lineCap = "butt";
-    context.strokeStyle = "rgba(0, 0, 0, 0.55)";
+    context.lineCap = 'butt';
+    context.strokeStyle = 'rgba(0, 0, 0, 0.55)';
     context.lineWidth = 3.5 * ratio;
     context.stroke();
     context.strokeStyle = LINE;
     context.lineWidth = 1.75 * ratio;
     context.stroke();
 
-    this.caption.textContent = along ? `y=${formatLength(p.index * s.stepY)}` : `x=${formatLength(p.index * s.stepX)}`;
-    this.element.classList.add("visible");
+    this.caption.textContent = along
+      ? `y=${formatLength(p.index * s.stepY)}`
+      : `x=${formatLength(p.index * s.stepX)}`;
+    this.element.classList.add('visible');
     window.clearTimeout(this.timer);
     if (!this.held) this.timer = window.setTimeout(() => this.hide(), HIDE_DELAY);
   }
@@ -101,7 +118,7 @@ export class Locator {
 
   release(): void {
     this.held = false;
-    if (this.element.classList.contains("visible")) {
+    if (this.element.classList.contains('visible')) {
       window.clearTimeout(this.timer);
       this.timer = window.setTimeout(() => this.hide(), HIDE_DELAY);
     }
@@ -110,7 +127,7 @@ export class Locator {
   hide(): void {
     window.clearTimeout(this.timer);
     this.held = false;
-    this.element.classList.remove("visible");
+    this.element.classList.remove('visible');
   }
 
   /** The surface in the colors of the colormap, averaged down to about the size of the map. */
@@ -121,10 +138,10 @@ export class Locator {
     const reduced = reduce(s.z, s.rows, s.columns, blockY, blockX);
     const columns = Math.ceil(s.columns / blockX);
     const rows = Math.ceil(s.rows / blockY);
-    const image = document.createElement("canvas");
+    const image = document.createElement('canvas');
     image.width = columns;
     image.height = rows;
-    const context = image.getContext("2d") as CanvasRenderingContext2D;
+    const context = image.getContext('2d') as CanvasRenderingContext2D;
     const pixels = context.createImageData(columns, rows);
     const lut = p.lut();
     const [lo, hi] = p.range;

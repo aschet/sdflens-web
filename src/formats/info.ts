@@ -4,10 +4,10 @@
 
 /** The description of a file that SDF and x3p files share, so that the information panel reads the same for both. */
 
-import type { InfoSection } from "../model";
-import { formatLength } from "../units";
+import type { InfoSection } from '../model';
+import { formatLength } from '../units';
 
-export type Feature = "Surface" | "Profile" | "Point cloud";
+export type Feature = 'Surface' | 'Profile' | 'Point cloud';
 
 export interface Description {
   /** The format with its encoding, as in "SDF binary" or "x3p XML". */
@@ -29,9 +29,15 @@ export interface Description {
   probing: Partial<Record<ProbingField, string>>;
 }
 
-export const INSTRUMENT_FIELDS = ["Manufacturer", "Model", "Serial", "Version", "Calibration"] as const;
+export const INSTRUMENT_FIELDS = [
+  'Manufacturer',
+  'Model',
+  'Serial',
+  'Version',
+  'Calibration',
+] as const;
 export type InstrumentField = (typeof INSTRUMENT_FIELDS)[number];
-export const PROBING_FIELDS = ["Type", "Identification"] as const;
+export const PROBING_FIELDS = ['Type', 'Identification'] as const;
 export type ProbingField = (typeof PROBING_FIELDS)[number];
 
 const PLACEHOLDER = /^(n\/a|not available|not set|none|unknown|-)?$/i;
@@ -43,44 +49,78 @@ export function isPlaceholder(value: string | undefined): boolean {
 
 /** A profile is a surface of a single row or a single column. */
 export function featureOf(cloud: boolean, columns: number, rows: number): Feature {
-  return cloud ? "Point cloud" : rows === 1 || columns === 1 ? "Profile" : "Surface";
+  return cloud ? 'Point cloud' : rows === 1 || columns === 1 ? 'Profile' : 'Surface';
 }
 
 export function sizeText(feature: Feature, columns: number, rows: number): string {
-  const count = (value: number): string => value.toLocaleString("en");
-  return feature === "Surface" ? `${count(columns)} × ${count(rows)} points` : `${count(Math.max(columns, rows))} points`;
+  const count = (value: number): string => value.toLocaleString('en');
+  return feature === 'Surface'
+    ? `${count(columns)} × ${count(rows)} points`
+    : `${count(Math.max(columns, rows))} points`;
 }
 
-export function stepText(feature: Feature, stepX: number, stepY: number, columns: number, assumed = false): string {
-  if (feature === "Surface") return `${formatLength(stepX)} × ${formatLength(stepY)}`;
+export function stepText(
+  feature: Feature,
+  stepX: number,
+  stepY: number,
+  columns: number,
+  assumed = false,
+): string {
+  if (feature === 'Surface') return `${formatLength(stepX)} × ${formatLength(stepY)}`;
   const step = formatLength(columns === 1 ? stepY : stepX);
   return assumed ? `${step}, assumed` : step;
 }
 
-const DATE = /^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2})(?::\d{2}(?:\.\d+)?)?\s*(Z|[+-]\d{2}(?::?\d{2})?)?/;
+const DATE =
+  /^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2})(?::\d{2}(?:\.\d+)?)?\s*(Z|[+-]\d{2}(?::?\d{2})?)?/;
 
 /**
  * A date written in the locale of the system and in its time zone. A date with a time zone, such as UTC, is
  * converted; a date without one is local time already and stays as it is. Text that is not a date, such as a
  * placeholder, gives undefined. A date that cannot be read is no reason to fail: it gives undefined as well.
  */
-export function formatDate(text: string | undefined, locale?: string, timeZone?: string): string | undefined {
+export function formatDate(
+  text: string | undefined,
+  locale?: string,
+  timeZone?: string,
+): string | undefined {
   if (isPlaceholder(text)) return undefined;
   const m = DATE.exec((text as string).trim());
   if (!m) return undefined;
-  const [year, month, day, hour, minute] = m.slice(1, 6).map(Number) as [number, number, number, number, number];
+  const [year, month, day, hour, minute] = m.slice(1, 6).map(Number) as [
+    number,
+    number,
+    number,
+    number,
+    number,
+  ];
   try {
     let date: Date;
     if (m[6] === undefined) {
       date = new Date(year, month - 1, day, hour, minute);
       // A day or a time that does not exist, such as the 30th of February, rolls over; it is not a date.
-      if (date.getMonth() !== month - 1 || date.getDate() !== day || hour > 23 || minute > 59) return undefined;
+      if (
+        date.getMonth() !== month - 1 ||
+        date.getDate() !== day ||
+        hour > 23 ||
+        minute > 59
+      )
+        return undefined;
     } else {
-      const zone = m[6] === "Z" ? "Z" : /^[+-]\d{2}$/.test(m[6]) ? `${m[6]}:00` : m[6].replace(/^([+-]\d{2})(\d{2})$/, "$1:$2");
+      const zone =
+        m[6] === 'Z'
+          ? 'Z'
+          : /^[+-]\d{2}$/.test(m[6])
+            ? `${m[6]}:00`
+            : m[6].replace(/^([+-]\d{2})(\d{2})$/, '$1:$2');
       date = new Date(`${m[1]}-${m[2]}-${m[3]}T${m[4]}:${m[5]}:00${zone}`);
     }
     if (Number.isNaN(date.getTime())) return undefined;
-    return new Intl.DateTimeFormat(locale, { dateStyle: "medium", timeStyle: "short", timeZone }).format(date);
+    return new Intl.DateTimeFormat(locale, {
+      dateStyle: 'medium',
+      timeStyle: 'short',
+      timeZone,
+    }).format(date);
   } catch {
     return undefined;
   }
@@ -97,23 +137,44 @@ export function safely(build: () => InfoSection[]): InfoSection[] {
 
 export function describeFile(d: Description): InfoSection[] {
   const file: InfoSection = {
-    title: "File",
+    title: 'File',
     rows: [
-      ["Format", d.format],
-      ["Revision", d.revision],
-      ["Feature", d.feature],
-      ["Creator", isPlaceholder(d.creator) ? "-" : (d.creator as string)],
-      ["Creation", isPlaceholder(d.creation) ? "-" : (d.creation as string)],
+      ['Format', d.format],
+      ['Revision', d.revision],
+      ['Feature', d.feature],
+      ['Creator', isPlaceholder(d.creator) ? '-' : (d.creator as string)],
+      ['Creation', isPlaceholder(d.creation) ? '-' : (d.creation as string)],
     ],
   };
   // The types of the stored axes, in the order x, y, z.
-  const types = [d.types.x, d.types.y, d.types.z].filter((type): type is string => type !== undefined);
-  const data: InfoSection = { title: "Data", rows: [["Type", types.join(", ")], ["Size", d.size]] };
-  data.rows.push(["Step", d.step]);
-  const given = (value: string | undefined): string => (isPlaceholder(value) ? "-" : (value as string));
-  if (d.resolution) data.rows.push(["Height resolution", d.resolution]);
-  if (d.placement) data.rows.push(["Placement", d.placement]);
-  const instrument: InfoSection = { title: "Instrument", rows: INSTRUMENT_FIELDS.map((field): [string, string] => [field, given(d.instrument[field])]) };
-  const probing: InfoSection = { title: "Probing", rows: PROBING_FIELDS.map((field): [string, string] => [field, given(d.probing[field])]) };
+  const types = [d.types.x, d.types.y, d.types.z].filter(
+    (type): type is string => type !== undefined,
+  );
+  const data: InfoSection = {
+    title: 'Data',
+    rows: [
+      ['Type', types.join(', ')],
+      ['Size', d.size],
+    ],
+  };
+  data.rows.push(['Step', d.step]);
+  const given = (value: string | undefined): string =>
+    isPlaceholder(value) ? '-' : (value as string);
+  if (d.resolution) data.rows.push(['Height resolution', d.resolution]);
+  if (d.placement) data.rows.push(['Placement', d.placement]);
+  const instrument: InfoSection = {
+    title: 'Instrument',
+    rows: INSTRUMENT_FIELDS.map((field): [string, string] => [
+      field,
+      given(d.instrument[field]),
+    ]),
+  };
+  const probing: InfoSection = {
+    title: 'Probing',
+    rows: PROBING_FIELDS.map((field): [string, string] => [
+      field,
+      given(d.probing[field]),
+    ]),
+  };
   return [file, data, instrument, probing];
 }

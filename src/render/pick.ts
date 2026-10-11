@@ -4,7 +4,7 @@
 
 /** Picking in the 3D view: the measured point nearest to a position on the screen. */
 
-import { multiply, type Mat4 } from "./camera";
+import { multiply, type Mat4 } from './camera';
 
 // Points of the visible surface lie at most this many pixel footprints behind the nearest point within the
 // radius; points that are farther behind belong to a surface that is hidden.
@@ -20,7 +20,14 @@ export interface Projection {
 }
 
 /** The screen positions in pixels, y down, and the depths of ``vertices``. */
-export function project(vertices: Float32Array, view: Mat4, proj: Mat4, zFactor: number, width: number, height: number): Projection {
+export function project(
+  vertices: Float32Array,
+  view: Mat4,
+  proj: Mat4,
+  zFactor: number,
+  width: number,
+  height: number,
+): Projection {
   const m = multiply(proj, view) as number[] & { [index: number]: number };
   const count = vertices.length / 3;
   const x = new Float32Array(count);
@@ -42,7 +49,10 @@ export function project(vertices: Float32Array, view: Mat4, proj: Mat4, zFactor:
 
 /** The vertex nearest to ``(px, py)`` in the front triangle there, or null if no triangle covers it. */
 export function pickFace(
-  projection: Projection, triangles: Uint32Array, px: number, py: number,
+  projection: Projection,
+  triangles: Uint32Array,
+  px: number,
+  py: number,
 ): number | null {
   const { x, y, depth } = projection;
   let bestDepth = Infinity;
@@ -51,12 +61,25 @@ export function pickFace(
     const a = triangles[t] as number;
     const b = triangles[t + 1] as number;
     const c = triangles[t + 2] as number;
-    const ax = x[a] as number, ay = y[a] as number;
-    const bx = x[b] as number, by = y[b] as number;
-    const cx = x[c] as number, cy = y[c] as number;
-    if (Math.min(ax, bx, cx) > px || Math.max(ax, bx, cx) < px || Math.min(ay, by, cy) > py || Math.max(ay, by, cy) < py) continue;
-    const dx0 = bx - ax, dy0 = by - ay, dx1 = cx - ax, dy1 = cy - ay;
-    const dx2 = px - ax, dy2 = py - ay;
+    const ax = x[a] as number,
+      ay = y[a] as number;
+    const bx = x[b] as number,
+      by = y[b] as number;
+    const cx = x[c] as number,
+      cy = y[c] as number;
+    if (
+      Math.min(ax, bx, cx) > px ||
+      Math.max(ax, bx, cx) < px ||
+      Math.min(ay, by, cy) > py ||
+      Math.max(ay, by, cy) < py
+    )
+      continue;
+    const dx0 = bx - ax,
+      dy0 = by - ay,
+      dx1 = cx - ax,
+      dy1 = cy - ay;
+    const dx2 = px - ax,
+      dy2 = py - ay;
     const d00 = dx0 * dx0 + dy0 * dy0;
     const d01 = dx0 * dx1 + dy0 * dy1;
     const d11 = dx1 * dx1 + dy1 * dy1;
@@ -68,7 +91,9 @@ export function pickFace(
     const w = (d00 * d21 - d01 * d20) / denominator;
     const u = 1 - v - w;
     if (u < -EDGE_TOLERANCE || v < -EDGE_TOLERANCE || w < -EDGE_TOLERANCE) continue;
-    const da = depth[a] as number, db = depth[b] as number, dc = depth[c] as number;
+    const da = depth[a] as number,
+      db = depth[b] as number,
+      dc = depth[c] as number;
     if (da <= 0 || db <= 0 || dc <= 0) continue;
     // The inverse of the depth is linear on the screen.
     const covered = 1 / (u / da + v / db + w / dc);
@@ -82,7 +107,13 @@ export function pickFace(
 
 /** The visible measured vertex within ``radius`` pixels of ``(px, py)`` that is nearest to it, or null. */
 export function pickVertex(
-  projection: Projection, valid: Uint8Array, proj: Mat4, height: number, px: number, py: number, radius: number,
+  projection: Projection,
+  valid: Uint8Array,
+  proj: Mat4,
+  height: number,
+  px: number,
+  py: number,
+  radius: number,
 ): number | null {
   const { x, y, depth } = projection;
   const near: number[] = [];
@@ -111,8 +142,17 @@ export function pickVertex(
 
 /** The index of the measured vertex that a click at ``(px, py)`` picks: a click on a triangle picks its nearest corner. */
 export function pick(
-  vertices: Float32Array, valid: Uint8Array, triangles: Uint32Array, view: Mat4, proj: Mat4,
-  zFactor: number, px: number, py: number, width: number, height: number, radius: number,
+  vertices: Float32Array,
+  valid: Uint8Array,
+  triangles: Uint32Array,
+  view: Mat4,
+  proj: Mat4,
+  zFactor: number,
+  px: number,
+  py: number,
+  width: number,
+  height: number,
+  radius: number,
 ): number | null {
   const projection = project(vertices, view, proj, zFactor, width, height);
   if (triangles.length) {

@@ -4,10 +4,10 @@
 
 /** 2D view of a grid: the heights as a colormapped image with rulers, pan and zoom. */
 
-import type { Surface } from "../model";
-import { formatLength } from "../units";
-import { drawAxes, type Box } from "./axes";
-import type { Tool } from "./view3d";
+import type { Surface } from '../model';
+import { formatLength } from '../units';
+import { drawAxes, type Box } from './axes';
+import type { Tool } from './view3d';
 
 const LEFT = 48;
 const TOP = 8;
@@ -27,11 +27,20 @@ interface Style {
 /** The power of two of points to average along an axis for the number of device pixels each point covers. */
 export function blockSize(pixelsPerPoint: number, count: number): number {
   if (pixelsPerPoint >= 0.5) return 1;
-  return Math.min(2 ** Math.floor(Math.log2(1 / pixelsPerPoint)), 2 ** Math.floor(Math.log2(Math.max(count, 1))));
+  return Math.min(
+    2 ** Math.floor(Math.log2(1 / pixelsPerPoint)),
+    2 ** Math.floor(Math.log2(Math.max(count, 1))),
+  );
 }
 
 /** The averages of blocks of measured points; a block without a measured point is NaN. */
-export function reduce(data: Float32Array, rows: number, columns: number, blockY: number, blockX: number): Float32Array {
+export function reduce(
+  data: Float32Array,
+  rows: number,
+  columns: number,
+  blockY: number,
+  blockX: number,
+): Float32Array {
   const outRows = Math.ceil(rows / blockY);
   const outColumns = Math.ceil(columns / blockX);
   const out = new Float32Array(outRows * outColumns);
@@ -60,14 +69,18 @@ export class View2D {
   /** Called with a text for the point under the cursor, empty when the cursor is outside of the data. */
   onHover: (text: string) => void = () => {};
 
-  private readonly canvas = document.createElement("canvas");
+  private readonly canvas = document.createElement('canvas');
   private readonly observer: ResizeObserver;
   private surface: Surface | null = null;
   private lut: Uint8Array | null = null;
   private range: [number, number] = [0, 1];
   private levels = new Map<string, HTMLCanvasElement>();
-  private tool: Tool = "pan";
-  private style: Style = { background: "#1e1f22", foreground: "#e6e6e6", muted: "#9a9a9a" };
+  private tool: Tool = 'pan';
+  private style: Style = {
+    background: '#1e1f22',
+    foreground: '#e6e6e6',
+    muted: '#9a9a9a',
+  };
 
   private width = 1;
   private height = 1;
@@ -80,23 +93,30 @@ export class View2D {
   private frame = 0;
   private marker: { column: number; row: number } | null = null;
 
-  private readonly pointers = new Map<number, { x: number; y: number; button: number; type: string }>();
+  private readonly pointers = new Map<
+    number,
+    { x: number; y: number; button: number; type: string }
+  >();
   private press: { x: number; y: number; moved: boolean } | null = null;
   private pinch: { distance: number; x: number; y: number } | null = null;
 
   constructor(private readonly host: HTMLElement) {
-    this.canvas.className = "plane";
-    this.canvas.style.touchAction = "none";
+    this.canvas.className = 'plane';
+    this.canvas.style.touchAction = 'none';
     host.append(this.canvas);
-    this.canvas.addEventListener("pointerdown", (event) => this.onPointerDown(event));
-    this.canvas.addEventListener("pointermove", (event) => this.onPointerMove(event));
-    this.canvas.addEventListener("pointerup", (event) => this.onPointerUp(event));
-    this.canvas.addEventListener("pointercancel", (event) => this.onPointerUp(event, true));
-    this.canvas.addEventListener("pointerleave", (event) => {
-      if (event.pointerType === "mouse" && this.pointers.size === 0) this.onHover("");
+    this.canvas.addEventListener('pointerdown', (event) => this.onPointerDown(event));
+    this.canvas.addEventListener('pointermove', (event) => this.onPointerMove(event));
+    this.canvas.addEventListener('pointerup', (event) => this.onPointerUp(event));
+    this.canvas.addEventListener('pointercancel', (event) =>
+      this.onPointerUp(event, true),
+    );
+    this.canvas.addEventListener('pointerleave', (event) => {
+      if (event.pointerType === 'mouse' && this.pointers.size === 0) this.onHover('');
     });
-    this.canvas.addEventListener("wheel", (event) => this.onWheel(event), { passive: false });
-    this.canvas.addEventListener("contextmenu", (event) => event.preventDefault());
+    this.canvas.addEventListener('wheel', (event) => this.onWheel(event), {
+      passive: false,
+    });
+    this.canvas.addEventListener('contextmenu', (event) => event.preventDefault());
     this.observer = new ResizeObserver(() => this.resize());
     this.observer.observe(host);
     this.resize();
@@ -146,7 +166,12 @@ export class View2D {
 
   snapshot(): Promise<Blob> {
     this.render();
-    return new Promise((resolve, reject) => this.canvas.toBlob((blob) => (blob ? resolve(blob) : reject(new Error("No image"))), "image/png"));
+    return new Promise((resolve, reject) =>
+      this.canvas.toBlob(
+        (blob) => (blob ? resolve(blob) : reject(new Error('No image'))),
+        'image/png',
+      ),
+    );
   }
 
   dispose(): void {
@@ -168,7 +193,12 @@ export class View2D {
   /** The area covered by the points, each centered on its coordinate. */
   private bounds(): { x0: number; y0: number; x1: number; y1: number } {
     const s = this.surface as Surface;
-    return { x0: -0.5 * s.stepX, y0: -0.5 * s.stepY, x1: (s.columns - 0.5) * s.stepX, y1: (s.rows - 0.5) * s.stepY };
+    return {
+      x0: -0.5 * s.stepX,
+      y0: -0.5 * s.stepY,
+      x1: (s.columns - 0.5) * s.stepX,
+      y1: (s.rows - 0.5) * s.stepY,
+    };
   }
 
   private fit(): void {
@@ -183,7 +213,10 @@ export class View2D {
 
   private fitScale(): number {
     const b = this.bounds();
-    return Math.min(this.plotWidth() / (b.x1 - b.x0), this.plotHeight() / (b.y1 - b.y0));
+    return Math.min(
+      this.plotWidth() / (b.x1 - b.x0),
+      this.plotHeight() / (b.y1 - b.y0),
+    );
   }
 
   private toScreen(wx: number, wy: number): [number, number] {
@@ -234,7 +267,8 @@ export class View2D {
     if (cached) return cached;
     const s = this.surface as Surface;
     const lut = this.lut as Uint8Array;
-    const data = blockY > 1 || blockX > 1 ? reduce(s.z, s.rows, s.columns, blockY, blockX) : s.z;
+    const data =
+      blockY > 1 || blockX > 1 ? reduce(s.z, s.rows, s.columns, blockY, blockX) : s.z;
     const columns = Math.ceil(s.columns / blockX);
     const rows = Math.ceil(s.rows / blockY);
     const [lo, hi] = this.range;
@@ -255,16 +289,20 @@ export class View2D {
         pixels[at + 3] = 255;
       }
     }
-    const canvas = document.createElement("canvas");
+    const canvas = document.createElement('canvas');
     canvas.width = columns;
     canvas.height = rows;
-    (canvas.getContext("2d") as CanvasRenderingContext2D).putImageData(new ImageData(pixels, columns, rows), 0, 0);
+    (canvas.getContext('2d') as CanvasRenderingContext2D).putImageData(
+      new ImageData(pixels, columns, rows),
+      0,
+      0,
+    );
     this.levels.set(key, canvas);
     return canvas;
   }
 
   private render(): void {
-    const context = this.canvas.getContext("2d") as CanvasRenderingContext2D;
+    const context = this.canvas.getContext('2d') as CanvasRenderingContext2D;
     context.setTransform(this.ratio, 0, 0, this.ratio, 0, 0);
     context.fillStyle = this.style.background;
     context.fillRect(0, 0, this.width, this.height);
@@ -280,7 +318,8 @@ export class View2D {
     let blockX = blockSize(pointX, s.columns);
     let blockY = blockSize(pointY, s.rows);
     while (
-      Math.ceil(s.columns / blockX) > MAX_LEVEL_SIDE || Math.ceil(s.rows / blockY) > MAX_LEVEL_SIDE ||
+      Math.ceil(s.columns / blockX) > MAX_LEVEL_SIDE ||
+      Math.ceil(s.rows / blockY) > MAX_LEVEL_SIDE ||
       Math.ceil(s.columns / blockX) * Math.ceil(s.rows / blockY) > MAX_LEVEL_POINTS
     ) {
       blockX *= 2;
@@ -304,13 +343,28 @@ export class View2D {
       const sw = ((clipRight - clipLeft) / (right - left)) * image.width;
       const sy = ((clipTop - top) / (bottom - top)) * image.height;
       const sh = ((clipBottom - clipTop) / (bottom - top)) * image.height;
-      context.drawImage(image, sx, sy, sw, sh, clipLeft, clipTop, clipRight - clipLeft, clipBottom - clipTop);
+      context.drawImage(
+        image,
+        sx,
+        sy,
+        sw,
+        sh,
+        clipLeft,
+        clipTop,
+        clipRight - clipLeft,
+        clipBottom - clipTop,
+      );
     }
     // The edge of the data, so that the image is framed where it does not fill the plot.
     context.strokeStyle = this.style.muted;
     context.globalAlpha = 0.7;
     context.lineWidth = 1;
-    context.strokeRect(Math.round(left) + 0.5, Math.round(top) + 0.5, Math.round(right - left), Math.round(bottom - top));
+    context.strokeRect(
+      Math.round(left) + 0.5,
+      Math.round(top) + 0.5,
+      Math.round(right - left),
+      Math.round(bottom - top),
+    );
     context.globalAlpha = 1;
     this.drawMarker(context);
     context.restore();
@@ -320,10 +374,13 @@ export class View2D {
   private drawMarker(context: CanvasRenderingContext2D): void {
     const s = this.surface as Surface;
     if (!this.marker) return;
-    const [x, y] = this.toScreen(this.marker.column * s.stepX, this.marker.row * s.stepY);
+    const [x, y] = this.toScreen(
+      this.marker.column * s.stepX,
+      this.marker.row * s.stepY,
+    );
     context.beginPath();
     context.arc(x, y, 4.5, 0, Math.PI * 2);
-    context.fillStyle = "#e67814";
+    context.fillStyle = '#e67814';
     context.fill();
     context.lineWidth = 1.5;
     context.strokeStyle = this.style.background;
@@ -352,8 +409,18 @@ export class View2D {
     drawAxes(
       context,
       this.box(),
-      { lo: Math.max(wx0, b.x0), hi: Math.min(wx1, b.x1), toScreen: (v) => this.toScreen(v, 0)[0], title: "x" },
-      { lo: Math.max(wy0, b.y0), hi: Math.min(wy1, b.y1), toScreen: (v) => this.toScreen(0, v)[1], title: "y" },
+      {
+        lo: Math.max(wx0, b.x0),
+        hi: Math.min(wx1, b.x1),
+        toScreen: (v) => this.toScreen(v, 0)[0],
+        title: 'x',
+      },
+      {
+        lo: Math.max(wy0, b.y0),
+        hi: Math.min(wy1, b.y1),
+        toScreen: (v) => this.toScreen(0, v)[1],
+        title: 'y',
+      },
       this.style,
       { grid: false },
     );
@@ -361,7 +428,10 @@ export class View2D {
 
   // ---------------------------------------------------------------------------------------- interaction
 
-  private describe(sx: number, sy: number): { text: string; column: number; row: number } | null {
+  private describe(
+    sx: number,
+    sy: number,
+  ): { text: string; column: number; row: number } | null {
     const s = this.surface;
     if (!s) return null;
     const [wx, wy] = this.toWorld(sx, sy);
@@ -369,7 +439,7 @@ export class View2D {
     const row = Math.floor(wy / s.stepY + 0.5);
     if (column < 0 || column >= s.columns || row < 0 || row >= s.rows) return null;
     const value = s.z[row * s.columns + column] as number;
-    const z = Number.isFinite(value) ? formatLength(value) : "not measured";
+    const z = Number.isFinite(value) ? formatLength(value) : 'not measured';
     return {
       text: `x=${formatLength(column * s.stepX)}, y=${formatLength(row * s.stepY)}, z=${z}`,
       column,
@@ -385,7 +455,12 @@ export class View2D {
   private onPointerDown(event: PointerEvent): void {
     const { x, y } = this.local(event);
     this.canvas.setPointerCapture(event.pointerId);
-    this.pointers.set(event.pointerId, { x, y, button: event.button, type: event.pointerType });
+    this.pointers.set(event.pointerId, {
+      x,
+      y,
+      button: event.button,
+      type: event.pointerType,
+    });
     if (this.pointers.size === 1) {
       this.press = { x, y, moved: false };
     } else {
@@ -397,7 +472,11 @@ export class View2D {
   private pinchState(): { distance: number; x: number; y: number } | null {
     const [a, b] = [...this.pointers.values()];
     if (!a || !b) return null;
-    return { distance: Math.hypot(a.x - b.x, a.y - b.y), x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+    return {
+      distance: Math.hypot(a.x - b.x, a.y - b.y),
+      x: (a.x + b.x) / 2,
+      y: (a.y + b.y) / 2,
+    };
   }
 
   private onPointerMove(event: PointerEvent): void {
@@ -405,7 +484,7 @@ export class View2D {
     const pointer = this.pointers.get(event.pointerId);
     if (!pointer) {
       const hit = this.describe(x, y);
-      this.onHover(hit ? hit.text : "");
+      this.onHover(hit ? hit.text : '');
       return;
     }
     const dx = x - pointer.x;
@@ -423,14 +502,15 @@ export class View2D {
       this.requestRender();
       return;
     }
-    if (this.press && Math.hypot(x - this.press.x, y - this.press.y) > CLICK_DISTANCE) this.press.moved = true;
-    let tool = this.tool === "zoom" ? "zoom" : "pan";
-    if (pointer.type === "mouse") {
-      if (pointer.button === 1) tool = "pan";
-      else if (pointer.button === 2) tool = "zoom";
+    if (this.press && Math.hypot(x - this.press.x, y - this.press.y) > CLICK_DISTANCE)
+      this.press.moved = true;
+    let tool = this.tool === 'zoom' ? 'zoom' : 'pan';
+    if (pointer.type === 'mouse') {
+      if (pointer.button === 1) tool = 'pan';
+      else if (pointer.button === 2) tool = 'zoom';
     }
     this.fitted = false;
-    if (tool === "pan") {
+    if (tool === 'pan') {
       this.x0 -= dx / this.scale;
       this.y1 += dy / this.scale;
       this.requestRender();
@@ -447,10 +527,10 @@ export class View2D {
     if (this.pointers.size === 0) this.press = null;
     if (cancelled || !pointer || !press || press.moved || pointer.button !== 0) return;
     // A tap marks the point, which is how a touch screen reads a value; a mouse reads it by hovering.
-    if (pointer.type !== "touch") return;
+    if (pointer.type !== 'touch') return;
     const hit = this.describe(press.x, press.y);
     this.marker = hit ? { column: hit.column, row: hit.row } : null;
-    this.onHover(hit ? hit.text : "");
+    this.onHover(hit ? hit.text : '');
     this.requestRender();
   }
 
@@ -458,6 +538,10 @@ export class View2D {
     event.preventDefault();
     const { left, top } = this.canvas.getBoundingClientRect();
     const delta = event.deltaY * (event.deltaMode === 1 ? 33 : 1);
-    this.zoomAt(ZOOM_STEP ** (-delta / 100), event.clientX - left - LEFT, event.clientY - top - TOP);
+    this.zoomAt(
+      ZOOM_STEP ** (-delta / 100),
+      event.clientX - left - LEFT,
+      event.clientY - top - TOP,
+    );
   }
 }

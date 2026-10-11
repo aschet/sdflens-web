@@ -21,7 +21,7 @@ SPDX-License-Identifier: GPL-3.0-or-later
 }
 
 @media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
+  :root:not([data-theme='light']) {
     --bg: #15161a;
     --surface: #202227;
     --stage: #1a1b1f;
@@ -35,7 +35,7 @@ SPDX-License-Identifier: GPL-3.0-or-later
   }
 }
 
-:root[data-theme="dark"] {
+:root[data-theme='dark'] {
   color-scheme: dark;
   --bg: #15161a;
   --surface: #202227;
@@ -49,7 +49,7 @@ SPDX-License-Identifier: GPL-3.0-or-later
   --shadow: 0 2px 12px rgba(0, 0, 0, 0.5);
 }
 
-:root[data-theme="light"] {
+:root[data-theme='light'] {
   color-scheme: light;
 }
 
@@ -66,7 +66,12 @@ body {
 body {
   background: var(--bg);
   color: var(--text);
-  font: 14px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font:
+    14px/1.45 system-ui,
+    -apple-system,
+    'Segoe UI',
+    Roboto,
+    sans-serif;
   overflow: hidden;
   -webkit-text-size-adjust: 100%;
 }
@@ -179,7 +184,7 @@ input:focus-visible,
   font-size: 15px;
 }
 
-.button[aria-expanded="true"] {
+.button[aria-expanded='true'] {
   background: var(--hover);
   border-color: var(--accent);
 }
@@ -207,8 +212,8 @@ input:focus-visible,
   cursor: pointer;
 }
 
-.segmented button[aria-selected="true"],
-.segmented button[aria-pressed="true"] {
+.segmented button[aria-selected='true'],
+.segmented button[aria-pressed='true'] {
   background: var(--surface);
   color: var(--text);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
@@ -247,7 +252,7 @@ input:focus-visible,
   background: var(--hover);
 }
 
-.mode[aria-pressed="true"] {
+.mode[aria-pressed='true'] {
   color: var(--accent);
   border-color: var(--accent);
   background: var(--hover);
@@ -287,16 +292,16 @@ input:focus-visible,
   --dock: 56px;
 }
 
-#app[data-view="profile"] {
+#app[data-view='profile'] {
   --dock: 98px;
 }
 
-#app[data-view="2d"] .stage {
+#app[data-view='2d'] .stage {
   --rr: 90px;
 }
 
 /* In the 3D view the tools float over the picture; the plots keep a margin for their axes. */
-#app[data-view="3d"] .stage {
+#app[data-view='3d'] .stage {
   --rl: 0px;
 }
 
@@ -336,7 +341,9 @@ input:focus-visible,
   pointer-events: none;
   opacity: 0;
   visibility: hidden;
-  transition: opacity 0.15s, visibility 0.15s;
+  transition:
+    opacity 0.15s,
+    visibility 0.15s;
 }
 
 .locator.visible {
@@ -376,7 +383,7 @@ input:focus-visible,
   color: var(--text);
 }
 
-.tool[aria-pressed="true"] {
+.tool[aria-pressed='true'] {
   background: var(--hover);
   color: var(--accent);
 }
@@ -461,7 +468,7 @@ input:focus-visible,
   padding: 0 6px 2px;
 }
 
-.profile-bar input[type="range"] {
+.profile-bar input[type='range'] {
   flex: 1 1 auto;
   width: auto;
   min-width: 80px;
@@ -498,25 +505,33 @@ input:focus-visible,
   padding: 20px;
   overflow: auto;
   background:
-    radial-gradient(circle at 20% 15%, color-mix(in srgb, var(--accent) 12%, transparent), transparent 45%),
-    radial-gradient(circle at 85% 90%, color-mix(in srgb, var(--accent) 10%, transparent), transparent 40%),
+    radial-gradient(
+      circle at 20% 15%,
+      color-mix(in srgb, var(--accent) 12%, transparent),
+      transparent 45%
+    ),
+    radial-gradient(
+      circle at 85% 90%,
+      color-mix(in srgb, var(--accent) 10%, transparent),
+      transparent 40%
+    ),
     var(--stage);
 }
 
-#app:not([data-state="empty"]) .landing {
+#app:not([data-state='empty']) .landing {
   display: none;
 }
 
-#app[data-state="empty"] .floating,
-#app[data-state="empty"] #fileName,
-#app[data-state="empty"] #shotButton,
-#app[data-state="empty"] #displayButton,
-#app[data-state="empty"] #infoButton,
-#app[data-state="empty"] .views {
+#app[data-state='empty'] .floating,
+#app[data-state='empty'] #fileName,
+#app[data-state='empty'] #shotButton,
+#app[data-state='empty'] #displayButton,
+#app[data-state='empty'] #infoButton,
+#app[data-state='empty'] .views {
   display: none;
 }
 
-#app[data-state="empty"] .bar {
+#app[data-state='empty'] .bar {
   justify-content: space-between;
 }
 
@@ -687,8 +702,8 @@ input:focus-visible,
 }
 
 select,
-input[type="range"],
-input[type="number"] {
+input[type='range'],
+input[type='number'] {
   font: inherit;
   color: var(--text);
 }
@@ -701,7 +716,7 @@ select {
   width: 100%;
 }
 
-input[type="range"] {
+input[type='range'] {
   accent-color: var(--accent);
   width: 100%;
 }
@@ -775,7 +790,7 @@ input[type="range"] {
     --bar: 116px;
   }
 
-  #app[data-state="empty"] {
+  #app[data-state='empty'] {
     --bar: 52px;
   }
 
@@ -784,7 +799,7 @@ input[type="range"] {
     --rb: calc(var(--dock) + 56px);
   }
 
-  #app[data-view="2d"] .stage {
+  #app[data-view='2d'] .stage {
     --rr: 76px;
   }
 
@@ -821,17 +836,17 @@ input[type="range"] {
     order: 2;
   }
 
-  #app[data-state="empty"] .file-name {
+  #app[data-state='empty'] .file-name {
     order: 0;
     flex: 1 1 0;
   }
 
-  #app[data-state="empty"] .brand .button,
-  #app[data-state="empty"] .actions .button {
+  #app[data-state='empty'] .brand .button,
+  #app[data-state='empty'] .actions .button {
     order: 0;
   }
 
-  #app[data-state="empty"] #openButton {
+  #app[data-state='empty'] #openButton {
     margin-left: auto;
   }
 
@@ -988,7 +1003,7 @@ input[type="range"] {
 
   /* The controls of a profile share the row of the status text, so the plot keeps its height. */
   #app,
-  #app[data-view="profile"] {
+  #app[data-view='profile'] {
     --dock: 56px;
   }
 
@@ -1014,11 +1029,11 @@ input[type="range"] {
     --rb: var(--dock);
   }
 
-  #app[data-view="3d"] .stage {
+  #app[data-view='3d'] .stage {
     --rl: 0px;
   }
 
-  #app[data-view="2d"] .stage {
+  #app[data-view='2d'] .stage {
     --rr: 76px;
   }
 

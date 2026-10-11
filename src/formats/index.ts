@@ -2,9 +2,9 @@
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-import { FormatError, type SurfaceFile } from "../model";
-import { readSdf } from "./sdf";
-import { readX3p } from "./x3p";
+import { FormatError, type SurfaceFile } from '../model';
+import { readSdf } from './sdf';
+import { readX3p } from './x3p';
 
 export { readSdf, readX3p };
 
@@ -12,6 +12,6 @@ export { readSdf, readX3p };
 export function readFile(bytes: Uint8Array, name: string): SurfaceFile {
   if (bytes[0] === 0x50 && bytes[1] === 0x4b) return readX3p(bytes, name);
   const first = String.fromCharCode(bytes[0] ?? 0).toLowerCase();
-  if (first === "a" || first === "b") return readSdf(bytes, name);
-  throw new FormatError("The file is neither an SDF nor an x3p file");
+  if (first === 'a' || first === 'b') return readSdf(bytes, name);
+  throw new FormatError('The file is neither an SDF nor an x3p file');
 }
