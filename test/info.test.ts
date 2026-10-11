@@ -61,19 +61,36 @@ describe("file information", () => {
   });
 
   it("shows the creation date in the file section for both formats, and who created it", () => {
-    expect(info("iso2_surface_binary.sdf").File).toMatchObject({ Creation: "2026-01-01 12:00 UTC" });
-    expect(info("x3pio_surface_binary.x3p").File).toMatchObject({ Creation: "2026-01-01 12:00 UTC" });
+    expect(info("iso2_surface_binary.sdf").File?.Creation).toBe(info("x3pio_surface_binary.x3p").File?.Creation);
     expect(info("x3pio_surface_binary.x3p").Source).toMatchObject({ Creator: "x3pio sample generator" });
     // An SDF file has no creator or comment, so it has no such section, and the modification date is not shown.
     expect(info("iso2_surface_binary.sdf")).not.toHaveProperty("Source");
     expect(JSON.stringify(info("iso2_surface_binary.sdf"))).not.toContain("Modified");
   });
 
-  it("formats dates and leaves out placeholders", () => {
-    expect(formatDate("2024-05-01T10:00:00.0+02:00")).toBe("2024-05-01 10:00 +02:00");
-    expect(formatDate("2024-05-01T10:00:00Z")).toBe("2024-05-01 10:00 UTC");
-    expect(formatDate("2024-05-01 10:00:00")).toBe("2024-05-01 10:00");
+  it("writes dates in the locale and the time zone of the system, converting a date that has a zone", () => {
+    const local = (date: Date): string => new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "short" }).format(date);
+    // The same instant in UTC and with an offset is shown the same way.
+    expect(formatDate("2024-05-01T10:00:00Z")).toBe(local(new Date(Date.UTC(2024, 4, 1, 10, 0))));
+    expect(formatDate("2024-05-01T12:00:00.0+02:00")).toBe(local(new Date(Date.UTC(2024, 4, 1, 10, 0))));
+    // A date without a zone is local time already.
+    expect(formatDate("2024-05-01 10:00:00")).toBe(local(new Date(2024, 4, 1, 10, 0)));
+    expect(info("iso2_surface_binary.sdf").File).toMatchObject({ Creation: local(new Date(Date.UTC(2026, 0, 1, 12, 0))) });
+  });
+
+  it("converts to the time zone and the locale that are asked for", () => {
+    expect(formatDate("2024-05-01T12:00:00+02:00", "en-GB", "UTC")).toBe("1 May 2024, 10:00");
+    expect(formatDate("2024-05-01T10:00:00Z", "en-US", "America/New_York")).toBe("May 1, 2024, 6:00 AM");
+    expect(formatDate("2024-05-01T10:00:00+0530", "en-GB", "UTC")).toBe("1 May 2024, 04:30");
+  });
+
+  it("leaves out placeholders and text that is not a date", () => {
     expect(formatDate("N/A")).toBeUndefined();
+    expect(formatDate("not a date")).toBeUndefined();
     expect(formatDate(undefined)).toBeUndefined();
+  });
+
+  it("shows a dash where a file has no date", () => {
+    expect(info("x3pio_surface_binary.x3p").Instrument).toMatchObject({ Calibrated: "-" });
   });
 });

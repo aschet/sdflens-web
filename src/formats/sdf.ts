@@ -6,7 +6,7 @@
 
 import { FormatError, type InfoSection, type Surface, type SurfaceFile } from "../model";
 import { formatLength } from "../units";
-import { describeFile, featureOf, sizeText, stepText } from "./info";
+import { describeFile, featureOf, formatDate, sizeText, stepText } from "./info";
 
 type Dialect = "ISO-1.0" | "ISO-2.0" | "BCR-1.0";
 
@@ -114,13 +114,12 @@ function invalidTest(type: DataType, dialect: Dialect): (value: number) => boole
 
 const DATE_ZERO = /^0+$/;
 
-/** Formats the 12 digits DDMMYYYYhhmm of a date field. */
-function formatDate(text: string, utc: boolean): string {
+/** The date of the 12 digits DDMMYYYYhhmm as ISO 8601, with a Z for UTC; empty if the field holds no date. */
+function isoDate(text: string, utc: boolean): string {
   const value = text.trim();
-  if (DATE_ZERO.test(value) || value === "") return "";
   const m = /^(\d{2})(\d{2})(\d{4})(\d{2})(\d{2})$/.exec(value);
-  if (!m) return value;
-  return `${m[3]}-${m[2]}-${m[1]} ${m[4]}:${m[5]}${utc ? " UTC" : ""}`;
+  if (DATE_ZERO.test(value) || !m) return "";
+  return `${m[3]}-${m[2]}-${m[1]}T${m[4]}:${m[5]}:00${utc ? "Z" : ""}`;
 }
 
 function readBinary(bytes: Uint8Array): { header: Header; z: Float32Array } {
@@ -166,7 +165,7 @@ function readBinary(bytes: Uint8Array): { header: Header; z: Float32Array } {
   if (dialect === "BCR-1.0") reverseRows(z, rows, columns);
   const header: Header = {
     dialect, binary: true, manufacturer,
-    created: formatDate(created, dialect === "ISO-2.0"),
+    created: isoDate(created, dialect === "ISO-2.0"),
     columns, rows, xScale, yScale, zScale, zResolution, type,
   };
   return { header, z };
@@ -256,7 +255,7 @@ function readAscii(bytes: Uint8Array): { header: Header; z: Float32Array } {
   const header: Header = {
     dialect, binary: false,
     manufacturer: field("ManufacID").trim(),
-    created: formatDate(field("CreateDate"), dialect === "ISO-2.0"),
+    created: isoDate(field("CreateDate"), dialect === "ISO-2.0"),
     columns, rows, xScale: float("Xscale"), yScale: float("Yscale"), zScale, zResolution: float("Zresolution"), type,
   };
   const z = parseAsciiData(dataText, header, type, dialect);
@@ -358,7 +357,7 @@ function describe(header: Header): InfoSection[] {
     step: stepText(feature, header.xScale, header.yScale),
     resolution: header.zResolution < 0 ? undefined : formatLength(header.zResolution),
     // An SDF file names only the manufacturer.
-    creation: header.created,
+    creation: formatDate(header.created),
     instrument: { Manufacturer: header.manufacturer },
     source: [],
   });

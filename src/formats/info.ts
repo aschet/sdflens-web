@@ -53,14 +53,27 @@ export function stepText(feature: Feature, stepX: number, stepY: number): string
   return feature === "Surface" ? `${formatLength(stepX)} × ${formatLength(stepY)}` : formatLength(stepX);
 }
 
-/** A date as "2026-01-01 12:00 UTC"; a text that is not a date, such as a placeholder, gives undefined. */
-export function formatDate(text: string | undefined): string | undefined {
+const DATE = /^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2})(?::\d{2}(?:\.\d+)?)?\s*(Z|[+-]\d{2}(?::?\d{2})?)?/;
+
+/**
+ * A date written in the locale of the system and in its time zone. A date with a time zone, such as UTC, is
+ * converted; a date without one is local time already and stays as it is. Text that is not a date, such as a
+ * placeholder, gives undefined.
+ */
+export function formatDate(text: string | undefined, locale?: string, timeZone?: string): string | undefined {
   if (isPlaceholder(text)) return undefined;
-  const m = /^(\d{4}-\d{2}-\d{2})[T ](\d{2}:\d{2})(?::\d{2}(?:\.\d+)?)?\s*(Z|[+-]\d{2}(?::?\d{2})?)?/.exec((text as string).trim());
+  const m = DATE.exec((text as string).trim());
   if (!m) return undefined;
-  const zone = m[3];
-  const suffix = zone === undefined ? "" : zone === "Z" || /^[+-]00(?::?00)?$/.test(zone) ? " UTC" : ` ${zone}`;
-  return `${m[1]} ${m[2]}${suffix}`;
+  const [year, month, day, hour, minute] = m.slice(1, 6).map(Number) as [number, number, number, number, number];
+  let date: Date;
+  if (m[6] === undefined) {
+    date = new Date(year, month - 1, day, hour, minute);
+  } else {
+    const zone = m[6] === "Z" ? "Z" : /^[+-]\d{2}$/.test(m[6]) ? `${m[6]}:00` : m[6].replace(/^([+-]\d{2})(\d{2})$/, "$1:$2");
+    date = new Date(`${m[1]}-${m[2]}-${m[3]}T${m[4]}:${m[5]}:00${zone}`);
+  }
+  if (Number.isNaN(date.getTime())) return undefined;
+  return new Intl.DateTimeFormat(locale, { dateStyle: "medium", timeStyle: "short", timeZone }).format(date);
 }
 
 export function describeFile(d: Description): InfoSection[] {
