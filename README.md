@@ -8,10 +8,6 @@ file, so it also works from a local file and from any static host, without a ser
 
 Online: <https://aschet.github.io/sdflens-web/>
 
-Not supported: SDF with compression or checksums, as in [sdfio](https://github.com/aschet/sdfio), and the placement
-of an x3p file (rotation and offset of the axes), which is shown but not applied. The page does not save or convert
-files.
-
 ## Development
 
 Node.js 22.12 or newer.
@@ -27,19 +23,6 @@ npm run build      # dist/index.html
 npm run check      # lint, format, type check, build and tests with coverage
 ```
 
-The code is TypeScript without a framework. `src/formats` has the readers, `src/render` the views and the
-camera, `src/ui` the color bar and `src/main.ts` the page. The only dependency of the page is
-[fflate](https://github.com/101arrowz/fflate) for the zip archive of an x3p file.
-
 The tests read the files of `test/samples` and compare them with what [sdfio](https://github.com/aschet/sdfio) and
 [x3pio](https://github.com/aschet/x3pio) read from the same files. `tools/make_expected.py` writes
 `test/expected.json` from these libraries.
-
-## Publishing
-
-`.github/workflows/pages.yml` builds the page and publishes it with GitHub Pages. In the settings of the repository,
-set the source of Pages to GitHub Actions.
-
-## License
-
-GPL-3.0-or-later. The colormaps and the zip library are covered by [THIRD-PARTY-NOTICES.txt](THIRD-PARTY-NOTICES.txt).
