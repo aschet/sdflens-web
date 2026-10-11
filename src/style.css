@@ -720,10 +720,17 @@ input[type="range"] {
 }
 
 .drawer-foot {
+  display: grid;
+  gap: 2px;
   padding: 10px 14px;
   border-top: 1px solid var(--border);
   color: var(--muted);
   font-size: 12.5px;
+}
+
+.drawer-foot strong {
+  color: var(--text);
+  font-weight: 600;
 }
 
 .drawer-foot a {
