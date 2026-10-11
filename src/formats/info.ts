@@ -14,7 +14,8 @@ export interface Description {
   format: string;
   revision: string;
   feature: Feature;
-  /** When the data was generated, as text; undefined if the file does not say. */
+  /** Who created the data, and when; undefined if the file does not say. */
+  creator?: string;
   creation?: string;
   size: string;
   /** The distance between points of a regular grid. */
@@ -98,6 +99,7 @@ export function describeFile(d: Description): InfoSection[] {
       ["Format", d.format],
       ["Revision", d.revision],
       ["Feature", d.feature],
+      ["Creator", isPlaceholder(d.creator) ? "-" : (d.creator as string)],
       ["Creation", isPlaceholder(d.creation) ? "-" : (d.creation as string)],
     ],
   };

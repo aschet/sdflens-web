@@ -61,12 +61,19 @@ describe("file information", () => {
     expect(x3p).toMatchObject({ Manufacturer: "x3pio", Model: "tests/samples/generate.py", Serial: "-", Version: "1", Probing: "Software", "Probing ID": "synthetic data" });
   });
 
-  it("shows the creation date in the file section for both formats, and who created it", () => {
-    expect(info("iso2_surface_binary.sdf").File?.Creation).toBe(info("x3pio_surface_binary.x3p").File?.Creation);
-    expect(info("x3pio_surface_binary.x3p").Source).toMatchObject({ Creator: "x3pio sample generator" });
-    // An SDF file has no creator or comment, so it has no such section, and the modification date is not shown.
-    expect(info("iso2_surface_binary.sdf")).not.toHaveProperty("Source");
-    expect(JSON.stringify(info("iso2_surface_binary.sdf"))).not.toContain("Modified");
+  it("shows the creator and the creation date in the file section for both formats", () => {
+    const sdf = info("iso2_surface_binary.sdf");
+    const x3p = info("x3pio_surface_binary.x3p");
+    expect(Object.keys(sdf.File as object).slice(-2)).toEqual(["Creator", "Creation"]);
+    expect(Object.keys(x3p.File as object).slice(-2)).toEqual(["Creator", "Creation"]);
+    expect(x3p.File).toMatchObject({ Creator: "x3pio sample generator" });
+    // An SDF file does not name a creator, which shows as a dash.
+    expect(sdf.File).toMatchObject({ Creator: "-" });
+    expect(sdf.File?.Creation).toBe(x3p.File?.Creation);
+    expect(x3p.Source).toMatchObject({ Comment: expect.any(String) });
+    // An SDF file has no comment, so it has no such section, and the modification date is not shown.
+    expect(sdf).not.toHaveProperty("Source");
+    expect(JSON.stringify(sdf)).not.toContain("Modified");
   });
 
   it("writes dates in the locale and the time zone of the system, converting a date that has a zone", () => {
