@@ -4,13 +4,14 @@
 
 import { describe, expect, it } from "vitest";
 import { buildLut, colormapNames } from "../src/colormap";
-import { formatLength, formatRange, formatTick, niceTicks, unitFor } from "../src/units";
+import { formatLength, formatExtent, formatTick, niceTicks, unitFor } from "../src/units";
 
 describe("units", () => {
   it("formats lengths with an SI prefix", () => {
     expect(formatLength(1.5e-6)).toBe("1.5 µm");
     expect(formatLength(13e-9)).toBe("13 nm");
-    expect(formatRange(-1.2e-6, 1.25e-6)).toBe("-1.2…1.25 µm");
+    expect(formatExtent([399e-6, 299e-6, 4.4e-6])).toBe("399 × 299 × 4.4 µm");
+    expect(formatExtent([399e-6, 12e-9])).toBe("399 µm × 12 nm");
     expect(formatLength(0)).toBe("0 m");
     expect(formatLength(NaN)).toBe("n/a");
     expect(unitFor(2.5e-6)).toEqual([1e-6, "µm"]);

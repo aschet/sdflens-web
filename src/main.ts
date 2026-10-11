@@ -12,7 +12,7 @@ import { View2D } from "./render/view2d";
 import { View3D, Z_FACTOR_MAX, Z_FACTOR_MIN, type RenderMode, type Tool } from "./render/view3d";
 import { SAMPLES } from "./samples";
 import { Colorbar } from "./ui/colorbar";
-import { formatLength, formatRange } from "./units";
+import { formatExtent, formatLength } from "./units";
 
 type ViewName = "3d" | "2d" | "profile";
 
@@ -555,13 +555,10 @@ function showReadout(text: string): void {
     return;
   }
   const { extent } = state;
-  const parts = [];
-  if (extent) {
-    parts.push(`x=${formatRange(...extent.x)}`);
-    if (s.kind === "cloud" || s.rows > 1) parts.push(`y=${formatRange(...extent.y)}`);
-  }
-  parts.push(`z=${formatRange(stats.min, stats.max)}`);
-  element.textContent = parts.join(", ");
+  const sizes = extent ? [extent.x[1] - extent.x[0]] : [];
+  if (extent && (s.kind === "cloud" || s.rows > 1)) sizes.push(extent.y[1] - extent.y[0]);
+  sizes.push(stats.max - stats.min);
+  element.textContent = formatExtent(sizes);
 }
 
 // ------------------------------------------------------------------------------------------ opening files

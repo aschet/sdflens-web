@@ -35,10 +35,14 @@ export function formatLength(value: number, digits = 4): string {
   return `${significant(value / factor, digits)} ${symbol}`;
 }
 
-/** Formats an interval of lengths in meters in one common unit, as in "-1.2…1.2 µm". */
-export function formatRange(lo: number, hi: number, digits = 4): string {
-  const [factor, symbol] = unitFor(Math.max(Math.abs(lo), Math.abs(hi)));
-  return `${significant(lo / factor, digits)}…${significant(hi / factor, digits)} ${symbol}`;
+/** Formats extents in meters as "399 × 299 × 4.4 µm", in one unit unless the smallest would be below a tenth of it. */
+export function formatExtent(extents: number[], digits = 4): string {
+  const largest = Math.max(...extents);
+  const [factor, symbol] = unitFor(largest);
+  if (extents.every((value) => value === 0 || value / factor >= 0.1)) {
+    return `${extents.map((value) => significant(value / factor, digits)).join(" × ")} ${symbol}`;
+  }
+  return extents.map((value) => formatLength(value, digits)).join(" × ");
 }
 
 /** Formats ``value`` divided by the unit ``factor`` without floating point noise. */
