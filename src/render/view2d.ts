@@ -330,8 +330,19 @@ export class View2D {
     context.stroke();
   }
 
+  /** The part of the plot that the data covers: the axes run along its edges, not along those of the plot. */
   private box(): Box {
-    return { left: LEFT, top: TOP, width: this.plotWidth(), height: this.plotHeight() };
+    const b = this.bounds();
+    const [left, top] = this.toScreen(b.x0, b.y1);
+    const [right, bottom] = this.toScreen(b.x1, b.y0);
+    const l = Math.max(left, LEFT);
+    const t = Math.max(top, TOP);
+    return {
+      left: l,
+      top: t,
+      width: Math.max(Math.min(right, LEFT + this.plotWidth()) - l, 1),
+      height: Math.max(Math.min(bottom, TOP + this.plotHeight()) - t, 1),
+    };
   }
 
   private drawAxes(context: CanvasRenderingContext2D): void {

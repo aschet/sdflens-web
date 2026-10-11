@@ -129,7 +129,12 @@ export function drawAxes(
   context.textAlign = "right";
   context.fillText(`${x.title} (${xSymbol})`, right, bottom + MAJOR + 25);
   context.save();
-  context.translate(10, box.top + box.height / 2);
+  // The title of the y axis stands next to the labels, but not beyond the left edge.
+  let widest = 0;
+  context.font = FONT;
+  for (const tick of yTicks.major) widest = Math.max(widest, context.measureText(formatTick(tick, yFactor)).width);
+  context.font = `600 ${FONT}`;
+  context.translate(Math.max(10, box.left - MAJOR - 3 - widest - 8), box.top + box.height / 2);
   context.rotate(-Math.PI / 2);
   context.textAlign = "center";
   context.fillText(`${y.title} (${ySymbol})`, 0, 0);

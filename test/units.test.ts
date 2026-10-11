@@ -24,6 +24,8 @@ describe("units", () => {
   it("chooses nice ticks", () => {
     expect(niceTicks(0, 1, 6).map((tick) => Number(tick.toFixed(9)))).toEqual([0, 0.2, 0.4, 0.6, 0.8, 1]);
     expect(niceTicks(1, 1)).toEqual([1]);
+    // An axis does not get a single tick: 100 would be too coarse for this interval.
+    expect(niceTicks(-0.4, 82, 2)).toEqual([0, 20, 40, 60, 80]);
   });
 });
 

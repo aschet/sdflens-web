@@ -65,9 +65,26 @@ export function niceTicks(lo: number, hi: number, target = 6): number[] {
       break;
     }
   }
+  let ticks = ticksAt(lo, hi, step);
+  // An axis with a single tick says little: take finer steps until there are three.
+  for (let i = 0; i < 4 && ticks.length < 3; i++) {
+    step = smaller(step);
+    ticks = ticksAt(lo, hi, step);
+  }
+  return ticks;
+}
+
+function ticksAt(lo: number, hi: number, step: number): number[] {
   const first = Math.ceil(lo / step - 1e-9);
   const last = Math.floor(hi / step + 1e-9);
   const ticks: number[] = [];
-  for (let k = first; k <= last; k++) ticks.push(k * step);
+  for (let k = first; k <= last; k++) ticks.push(k * step || 0);
   return ticks;
+}
+
+/** The next smaller of the steps 1, 2 and 5 times a power of ten. */
+function smaller(step: number): number {
+  const magnitude = 10 ** Math.floor(Math.log10(step) + 1e-9);
+  const mantissa = Math.round(step / magnitude);
+  return mantissa >= 5 ? 2 * magnitude : mantissa >= 2 ? magnitude : 5 * (magnitude / 10);
 }
