@@ -561,7 +561,7 @@ function showReadout(text: string): void {
     field.push(s.x ? extent.x[1] - extent.x[0] : s.columns * s.stepX);
     if (s.kind === "cloud" || s.rows > 1) field.push(s.y ? extent.y[1] - extent.y[0] : s.rows * s.stepY);
   }
-  element.textContent = `FOV ${formatExtent(field)} · PV ${formatLength(stats.max - stats.min)}`;
+  element.textContent = `FOV ${formatExtent(field)}, PV ${formatLength(stats.max - stats.min)}`;
 }
 
 // ------------------------------------------------------------------------------------------ opening files
