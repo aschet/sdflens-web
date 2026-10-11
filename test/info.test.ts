@@ -20,8 +20,8 @@ describe("file information", () => {
   it("has the same sections for SDF and x3p, without the trailer and the metadata block", () => {
     for (const name of ["iso2_surface_binary.sdf", "x3pio_surface_binary.x3p", "bcr1_profile_ascii.sdf", "x3pio_point_cloud_binary.x3p"]) {
       const titles = Object.keys(info(name));
-      expect(titles.slice(0, 3)).toEqual(["File", "Data", "Instrument"]);
-      expect(titles.every((title) => ["File", "Data", "Instrument", "Source"].includes(title))).toBe(true);
+      expect(titles.slice(0, 4)).toEqual(["File", "Data", "Instrument", "Probing"]);
+      expect(titles.every((title) => ["File", "Data", "Instrument", "Probing", "Source"].includes(title))).toBe(true);
     }
   });
 
@@ -51,14 +51,18 @@ describe("file information", () => {
     expect(info("x3pio_surface_irregular_binary.x3p").Data).toMatchObject({ Positions: "stored for every point" });
   });
 
-  it("lists the fields of the instrument for both formats, with a dash for what a file does not give", () => {
-    const fields = ["Manufacturer", "Model", "Serial", "Version", "Probing", "Probing ID", "Calibration"];
-    const sdf = info("iso2_surface_binary.sdf").Instrument as Record<string, string>;
-    expect(Object.keys(sdf)).toEqual(fields);
-    expect(sdf).toMatchObject({ Manufacturer: "sdfio", Model: "-", Serial: "-", Calibration: "-" });
-    const x3p = info("x3pio_surface_binary.x3p").Instrument as Record<string, string>;
-    expect(Object.keys(x3p)).toEqual(fields);
-    expect(x3p).toMatchObject({ Manufacturer: "x3pio", Model: "tests/samples/generate.py", Serial: "-", Version: "1", Probing: "Software", "Probing ID": "synthetic data" });
+  it("lists the fields of the instrument and of the probing system for both formats, with a dash for what a file does not give", () => {
+    const fields = ["Manufacturer", "Model", "Serial", "Version", "Calibration"];
+    const sdf = info("iso2_surface_binary.sdf");
+    expect(Object.keys(sdf.Instrument as object)).toEqual(fields);
+    expect(sdf.Instrument).toMatchObject({ Manufacturer: "sdfio", Model: "-", Serial: "-", Calibration: "-" });
+    expect(sdf.Probing).toEqual({ Type: "-", Identification: "-" });
+    const x3p = info("x3pio_surface_binary.x3p");
+    expect(Object.keys(x3p.Instrument as object)).toEqual(fields);
+    expect(x3p.Instrument).toMatchObject({ Manufacturer: "x3pio", Model: "tests/samples/generate.py", Serial: "-", Version: "1" });
+    expect(x3p.Probing).toEqual({ Type: "Software", Identification: "synthetic data" });
+    // The probing system follows the instrument.
+    expect(Object.keys(x3p).slice(2, 4)).toEqual(["Instrument", "Probing"]);
   });
 
   it("shows the creator and the creation date in the file section for both formats", () => {

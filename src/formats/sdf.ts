@@ -359,6 +359,7 @@ function describe(header: Header): InfoSection[] {
     // An SDF file names only the manufacturer.
     creation: formatDate(header.created),
     instrument: { Manufacturer: header.manufacturer },
+    probing: {},
     source: [],
   });
 }

@@ -306,9 +306,11 @@ function describe(c: Context): InfoSection[] {
       Model: value("Instrument", "Model"),
       Serial: value("Instrument", "Serial"),
       Version: value("Instrument", "Version"),
-      Probing: value("ProbingSystem", "Type"),
-      "Probing ID": value("ProbingSystem", "Identification"),
       Calibration: formatDate(value("CalibrationDate")),
+    },
+    probing: {
+      Type: value("ProbingSystem", "Type"),
+      Identification: value("ProbingSystem", "Identification"),
     },
     creator: value("Creator"),
     creation: formatDate(value("Date")),
