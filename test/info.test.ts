@@ -50,6 +50,14 @@ describe("file information", () => {
     expect(info("x3pio_surface_irregular_binary.x3p").Data).toMatchObject({ Positions: "stored for every point" });
   });
 
+  it("names the data type of each axis the same way for SDF and x3p", () => {
+    // An SDF file stores only the heights; its lateral axes are given by the steps.
+    expect(info("iso2_surface_binary.sdf").Data).toMatchObject({ "X type": "-", "Y type": "-", "Z type": "int16" });
+    expect(info("iso2_surface_binary32_ascii.sdf").Data).toMatchObject({ "Z type": "float32" });
+    expect(info("x3pio_surface_binary.x3p").Data).toMatchObject({ "X type": "float64", "Y type": "float64", "Z type": "int16" });
+    expect(info("x3pio_point_cloud_binary.x3p").Data).toMatchObject({ "X type": "float32", "Z type": "float32" });
+  });
+
   it("lists the fields of the instrument and of the probing system for both formats, with a dash for what a file does not give", () => {
     const fields = ["Manufacturer", "Model", "Serial", "Version", "Calibration"];
     const sdf = info("iso2_surface_binary.sdf");

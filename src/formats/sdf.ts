@@ -25,11 +25,11 @@ const DATA_TYPES: Record<number, DataType> = {
   0: { name: "uint8", size: 1, integer: true, min: 0, max: 255, dialects: ["BCR-1.0"] },
   1: { name: "uint16", size: 2, integer: true, min: 0, max: 65535, dialects: ["BCR-1.0"] },
   2: { name: "uint32", size: 4, integer: true, min: 0, max: 4294967295, dialects: ["BCR-1.0"] },
-  3: { name: "binary32", size: 4, integer: false, min: -3.4028234663852886e38, max: 3.4028234663852886e38, dialects: ["ISO-2.0", "BCR-1.0"] },
+  3: { name: "float32", size: 4, integer: false, min: -3.4028234663852886e38, max: 3.4028234663852886e38, dialects: ["ISO-2.0", "BCR-1.0"] },
   4: { name: "int8", size: 1, integer: true, min: -128, max: 127, dialects: ["ISO-2.0", "BCR-1.0"] },
   5: { name: "int16", size: 2, integer: true, min: -32768, max: 32767, dialects: ALL },
   6: { name: "int32", size: 4, integer: true, min: -2147483648, max: 2147483647, dialects: ALL },
-  7: { name: "binary64", size: 8, integer: false, min: -Number.MAX_VALUE, max: Number.MAX_VALUE, dialects: ALL },
+  7: { name: "float64", size: 8, integer: false, min: -Number.MAX_VALUE, max: Number.MAX_VALUE, dialects: ALL },
 };
 
 // BCR-1.0 lets an ASCII header name these values instead of giving the code.
@@ -190,7 +190,7 @@ function storedArray(raw: ArrayBuffer, type: DataType): ArrayLike<number> {
     case "int8": return new Int8Array(raw);
     case "int16": return new Int16Array(raw);
     case "int32": return new Int32Array(raw);
-    case "binary32": return new Float32Array(raw);
+    case "float32": return new Float32Array(raw);
     default: return new Float64Array(raw);
   }
 }
@@ -355,6 +355,8 @@ function describe(header: Header): InfoSection[] {
     feature,
     size: sizeText(feature, header.columns, header.rows),
     step: stepText(feature, header.xScale, header.yScale),
+    // The lateral axes are given by their steps; only the heights are stored.
+    types: { z: header.type.name },
     resolution: header.zResolution < 0 ? undefined : formatLength(header.zResolution),
     // An SDF file names only the manufacturer.
     creation: formatDate(header.created),

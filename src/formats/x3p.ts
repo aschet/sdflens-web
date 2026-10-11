@@ -11,6 +11,8 @@ import { describeFile, featureOf, formatDate, safely, sizeText, stepText } from 
 interface Axis {
   absolute: boolean;
   type: string;
+  /** Whether the file names the data type; an incremental axis may leave it out. */
+  declared: boolean;
   increment: number;
 }
 
@@ -18,6 +20,8 @@ interface FieldType {
   size: number;
   read(view: DataView, offset: number): number;
 }
+
+const TYPE_NAMES: Record<string, string> = { I: "int16", L: "int32", F: "float32", D: "float64" };
 
 const TYPES: Record<string, FieldType> = {
   I: { size: 2, read: (view, offset) => view.getInt16(offset, true) },
@@ -176,13 +180,14 @@ function parseAxis(element: Element, name: string): Axis {
   const kind = text(child(element, "AxisType"));
   if (kind !== "I" && kind !== "A") throw new FormatError(`${name}: unknown AxisType "${kind}"`);
   const absolute = kind === "A";
-  const type = text(child(element, "DataType")) ?? (absolute ? "" : "D");
+  const declared = text(child(element, "DataType"));
+  const type = declared ?? (absolute ? "" : "D");
   if (!(type in TYPES)) throw new FormatError(`${name}: unknown or missing DataType "${type}"`);
   // Files may omit the increment; it is then 1.
   const incrementText = text(child(element, "Increment"));
   const increment = incrementText === undefined ? 1 : number(child(element, "Increment"), `${name}: Increment`);
   if (increment === 0) throw new FormatError(`${name}: Increment must not be zero`);
-  return { absolute, type, increment };
+  return { absolute, type, declared: declared !== undefined, increment };
 }
 
 function decodeBinary(
@@ -279,6 +284,10 @@ interface Context {
   binary: boolean;
 }
 
+function typeName(axis: Axis): string | undefined {
+  return axis.declared ? TYPE_NAMES[axis.type] : undefined;
+}
+
 function describe(c: Context): InfoSection[] {
   const feature = featureOf(c.cloud, c.rows);
   const regular = !c.x.absolute && !c.y.absolute;
@@ -300,6 +309,7 @@ function describe(c: Context): InfoSection[] {
     size: sizeText(feature, c.columns, c.rows),
     step: regular ? stepText(feature, Math.abs(c.x.increment), Math.abs(c.y.increment)) : undefined,
     positions: regular ? undefined : "stored for every point",
+    types: { x: typeName(c.x), y: typeName(c.y), z: typeName(c.z) },
     placement: turned || offsets.some((offset) => offset !== 0) ? "stored in the file, not applied" : undefined,
     instrument: {
       Manufacturer: value("Instrument", "Manufacturer"),

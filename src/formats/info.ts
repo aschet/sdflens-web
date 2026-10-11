@@ -22,6 +22,8 @@ export interface Description {
   step?: string;
   /** Says how the points of an irregular grid or of a cloud are positioned. */
   positions?: string;
+  /** The data type in which each axis is stored, if it is stored; the names are the same for every format. */
+  types: { x?: string; y?: string; z?: string };
   resolution?: string;
   placement?: string;
   /** The fields of the instrument and of the probing system; those that a format does not have, or that are not given, show as "-". */
@@ -107,9 +109,10 @@ export function describeFile(d: Description): InfoSection[] {
   const data: InfoSection = { title: "Data", rows: [["Size", d.size]] };
   if (d.step) data.rows.push(["Step", d.step]);
   if (d.positions) data.rows.push(["Positions", d.positions]);
+  const given = (value: string | undefined): string => (isPlaceholder(value) ? "-" : (value as string));
+  data.rows.push(["X type", given(d.types.x)], ["Y type", given(d.types.y)], ["Z type", given(d.types.z)]);
   if (d.resolution) data.rows.push(["Height resolution", d.resolution]);
   if (d.placement) data.rows.push(["Placement", d.placement]);
-  const given = (value: string | undefined): string => (isPlaceholder(value) ? "-" : (value as string));
   const instrument: InfoSection = { title: "Instrument", rows: INSTRUMENT_FIELDS.map((field): [string, string] => [field, given(d.instrument[field])]) };
   const probing: InfoSection = { title: "Probing", rows: PROBING_FIELDS.map((field): [string, string] => [field, given(d.probing[field])]) };
   return [file, data, instrument, probing];
