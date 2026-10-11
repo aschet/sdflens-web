@@ -55,7 +55,7 @@ function minorTicks(lo: number, hi: number, major: number[]): number[] {
 
 /** The ticks of an axis for its length in pixels. */
 function ticksFor(axis: AxisSpec, length: number, spacing: number): { major: number[]; minor: number[] } {
-  const major = niceTicks(axis.lo, axis.hi, Math.max(2, Math.floor(length / spacing)));
+  const major = niceTicks(axis.lo, axis.hi, Math.max(2, Math.floor(length / spacing) + 1));
   let minor = minorTicks(axis.lo, axis.hi, major);
   if (major.length >= 2) {
     const pixels = Math.abs(axis.toScreen(major[1] as number) - axis.toScreen(major[0] as number));

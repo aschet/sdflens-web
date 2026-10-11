@@ -67,7 +67,7 @@ export class Colorbar {
     context.textAlign = "left";
     context.fillText(symbol, BAR_LEFT, 17);
     if (hi > lo) {
-      for (const tick of niceTicks(lo, hi, Math.max(2, Math.floor(barHeight / 40)))) {
+      for (const tick of niceTicks(lo, hi, Math.max(2, Math.floor(barHeight / 30) + 1))) {
         const y = Math.round(TOP + ((hi - tick) / (hi - lo)) * barHeight) + 0.5;
         const x = BAR_LEFT + BAR_WIDTH;
         context.beginPath();
