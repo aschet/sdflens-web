@@ -6,7 +6,7 @@
 
 import { unzipSync } from "fflate";
 import { FormatError, type InfoSection, type Surface, type SurfaceFile } from "../model";
-import { formatLength } from "../units";
+import { describeFile, featureOf, formatDate, g, isPlaceholder, sizeText, stepText } from "./info";
 
 interface Axis {
   absolute: boolean;
@@ -105,7 +105,6 @@ export function readX3p(bytes: Uint8Array, name: string): SurfaceFile {
     decode = (layer) => decodeText(datums, layer, points, absolute);
   }
 
-  const featureType = (text(child(record1, "FeatureType")) ?? "").toUpperCase();
   const layer = (index: number): Surface => {
     const arrays = decode(index);
     return toSurface(arrays, { cloud, columns, rows, x, y });
@@ -115,9 +114,7 @@ export function readX3p(bytes: Uint8Array, name: string): SurfaceFile {
     name,
     layerCount: layers,
     layer,
-    info: describe({
-      root, record1, featureType: cloud ? "PCL" : featureType, columns, rows, layers, x, y, z, binary: !!link, axesElement,
-    }),
+    info: describe({ root, record1, axesElement, cloud, columns, rows, layers, x, y, z, binary: !!link }),
   };
 }
 
@@ -270,10 +267,11 @@ function toSurface(arrays: Map<string, Float32Array>, layout: Layout): Surface {
   return { kind: "grid", columns: layout.columns, rows: layout.rows, stepX: 0, stepY: 0, z, x, y };
 }
 
-interface Description {
+interface Context {
   root: Element;
   record1: Element;
-  featureType: string;
+  axesElement: Element;
+  cloud: boolean;
   columns: number;
   rows: number;
   layers: number;
@@ -281,55 +279,53 @@ interface Description {
   y: Axis;
   z: Axis;
   binary: boolean;
-  axesElement: Element;
 }
 
-const FEATURES: Record<string, string> = { SUR: "Surface", PRF: "Profile", PCL: "Point cloud" };
+/** The revision of the standard that the Revision element names, as x3pio resolves it. */
+function revisionName(text: string | undefined): string {
+  return /DAM1|Amd/i.test(text ?? "") ? "ISO 25178-72:2017/Amd 1:2020" : "ISO 25178-72:2017";
+}
 
-function describe(d: Description): InfoSection[] {
-  const g = (value: number): string => String(Number(value.toPrecision(10)));
-  const axis = (a: Axis): string => (a.absolute ? `absolute, ${TYPE_NAMES[a.type]}, factor ${g(a.increment)}` : `regular, step ${formatLength(Math.abs(a.increment))}`);
-  const sections: InfoSection[] = [
-    {
-      title: "File",
-      rows: [
-        ["Format", "x3p, " + (d.binary ? "binary" : "text")],
-        ["Revision", text(child(d.record1, "Revision")) ?? "not set"],
-        ["Feature", FEATURES[d.featureType] ?? d.featureType],
-        ["Layers", String(d.layers)],
-      ],
-    },
-    {
-      title: "Data",
-      rows: [
-        [d.featureType === "PCL" ? "Points" : "Points per row", String(d.columns)],
-        ...(d.featureType === "PCL" ? [] : ([["Rows", String(d.rows)]] as [string, string][])),
-        ["x axis", axis(d.x)],
-        ["y axis", axis(d.y)],
-        ["z axis", axis(d.z)],
-      ],
-    },
-  ];
-  const record2 = child(d.root, "Record2");
-  if (record2) {
-    const rows: [string, string][] = [];
-    const walk = (element: Element, path: string): void => {
-      const kids = Array.from(element.children);
-      if (kids.length === 0) {
-        const value = text(element);
-        if (value !== undefined) rows.push([path, value]);
-        return;
-      }
-      for (const kid of kids) walk(kid, path ? `${path} / ${kid.localName}` : kid.localName);
-    };
-    for (const kid of Array.from(record2.children)) walk(kid, kid.localName);
-    if (rows.length) sections.push({ title: "Metadata", rows });
-  }
-  const rotation = child(d.axesElement, "Rotation");
-  const offsets = ["CX", "CY", "CZ"].map((name) => Number(text(child(child(d.axesElement, name) as Element, "Offset")) ?? 0));
+function axisType(axis: Axis): string {
+  return `${TYPE_NAMES[axis.type]}${axis.increment === 1 ? "" : `, factor ${g(axis.increment)}`}`;
+}
+
+function describe(c: Context): InfoSection[] {
+  const feature = featureOf(c.cloud, c.rows);
+  const regular = !c.x.absolute && !c.y.absolute;
+  const record2 = child(c.root, "Record2");
+  const value = (...path: string[]): string | undefined => {
+    let element: Element | undefined = record2;
+    for (const name of path) element = element ? child(element, name) : undefined;
+    return text(element);
+  };
+  const join = (parts: (string | undefined)[]): string | undefined => {
+    const given = parts.filter((part) => !isPlaceholder(part));
+    return given.length ? given.join(", ") : undefined;
+  };
+
+  const rotation = child(c.axesElement, "Rotation");
+  const offsets = ["CX", "CY", "CZ"].map((name) => Number(text(child(child(c.axesElement, name) as Element, "Offset")) ?? 0));
   const turned = rotation !== undefined && Array.from(rotation.children).some((e, i) => Math.abs(Number(e.textContent) - (i % 4 === 0 ? 1 : 0)) > 1e-9);
-  if (turned || offsets.some((offset) => offset !== 0)) {
-    sections[0]?.rows.push(["Placement", "stored in the file, not applied"]);
-  }
-  return sections;
+
+  return describeFile({
+    format: `x3p, ${c.binary ? "binary" : "XML"}`,
+    revision: revisionName(text(child(c.record1, "Revision"))),
+    feature,
+    layers: c.layers,
+    size: sizeText(feature, c.columns, c.rows),
+    step: regular ? stepText(feature, Math.abs(c.x.increment), Math.abs(c.y.increment)) : undefined,
+    positions: regular ? undefined : "stored for every point",
+    dataType: regular ? axisType(c.z) : `x ${axisType(c.x)}, y ${axisType(c.y)}, z ${axisType(c.z)}`,
+    placement: turned || offsets.some((offset) => offset !== 0) ? "stored in the file, not applied" : undefined,
+    source: [
+      ["Manufacturer", value("Instrument", "Manufacturer")],
+      ["Instrument", join([value("Instrument", "Model"), value("Instrument", "Serial") && `serial ${value("Instrument", "Serial")}`, value("Instrument", "Version") && `version ${value("Instrument", "Version")}`])],
+      ["Probing system", join([value("ProbingSystem", "Type"), value("ProbingSystem", "Identification")])],
+      ["Creator", value("Creator")],
+      ["Created", formatDate(value("Date"))],
+      ["Calibrated", formatDate(value("CalibrationDate"))],
+      ["Comment", value("Comment")],
+    ],
+  });
 }

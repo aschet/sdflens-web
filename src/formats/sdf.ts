@@ -6,6 +6,7 @@
 
 import { FormatError, type InfoSection, type Surface, type SurfaceFile } from "../model";
 import { formatLength } from "../units";
+import { describeFile, featureOf, g, sizeText, stepText } from "./info";
 
 type Dialect = "ISO-1.0" | "ISO-2.0" | "BCR-1.0";
 
@@ -61,11 +62,10 @@ export function readSdf(bytes: Uint8Array, name: string): SurfaceFile {
   const first = String.fromCharCode(bytes[0] ?? 0).toLowerCase();
   let header: Header;
   let z: Float32Array;
-  let trailer: string;
   if (first === "b") {
-    ({ header, z, trailer } = readBinary(bytes));
+    ({ header, z } = readBinary(bytes));
   } else if (first === "a") {
-    ({ header, z, trailer } = readAscii(bytes));
+    ({ header, z } = readAscii(bytes));
   } else {
     throw new FormatError("Not an SDF file");
   }
@@ -79,7 +79,7 @@ export function readSdf(bytes: Uint8Array, name: string): SurfaceFile {
     x: null,
     y: null,
   };
-  return { format: "sdf", name, layerCount: 1, layer: () => surface, info: describe(header, trailer) };
+  return { format: "sdf", name, layerCount: 1, layer: () => surface, info: describe(header) };
 }
 
 function resolveDialect(text: string, magic: string): Dialect {
@@ -118,13 +118,13 @@ const DATE_ZERO = /^0+$/;
 /** Formats the 12 digits DDMMYYYYhhmm of a date field. */
 function formatDate(text: string, utc: boolean): string {
   const value = text.trim();
-  if (DATE_ZERO.test(value) || value === "") return "not set";
+  if (DATE_ZERO.test(value) || value === "") return "";
   const m = /^(\d{2})(\d{2})(\d{4})(\d{2})(\d{2})$/.exec(value);
   if (!m) return value;
   return `${m[3]}-${m[2]}-${m[1]} ${m[4]}:${m[5]}${utc ? " UTC" : ""}`;
 }
 
-function readBinary(bytes: Uint8Array): { header: Header; z: Float32Array; trailer: string } {
+function readBinary(bytes: Uint8Array): { header: Header; z: Float32Array } {
   if (bytes.length < 8) throw new FormatError("The file is too short to contain an SDF header");
   const magic = latin1(bytes.subarray(0, 8));
   if (!/^[abAB][A-Z]{3}-\d\.\d$/.test(magic)) throw new FormatError(`Not an SDF file, unexpected magic: "${magic}"`);
@@ -166,14 +166,13 @@ function readBinary(bytes: Uint8Array): { header: Header; z: Float32Array; trail
   const raw = bytes.buffer.slice(bytes.byteOffset + headerSize, bytes.byteOffset + headerSize + byteCount) as ArrayBuffer;
   const z = decodeRaw(raw, type, zScale, dialect, count);
   if (dialect === "BCR-1.0") reverseRows(z, rows, columns);
-  const trailer = latin1(bytes.subarray(headerSize + byteCount)).trim();
   const header: Header = {
     dialect, binary: true, manufacturer,
     created: formatDate(created, dialect === "ISO-2.0"),
     modified: formatDate(modified, dialect === "ISO-2.0"),
     columns, rows, xScale, yScale, zScale, zResolution, type,
   };
-  return { header, z, trailer };
+  return { header, z };
 }
 
 function decodeRaw(raw: ArrayBuffer, type: DataType, zScale: number, dialect: Dialect, count: number): Float32Array {
@@ -213,7 +212,7 @@ function reverseRows(z: Float32Array, rows: number, columns: number): void {
 const LINE_BREAK = /\r\n|\n|\r/;
 const TERMINATOR = /^[ \t]*\*[ \t]*$/;
 
-function readAscii(bytes: Uint8Array): { header: Header; z: Float32Array; trailer: string } {
+function readAscii(bytes: Uint8Array): { header: Header; z: Float32Array } {
   const text = new TextDecoder("utf-8").decode(bytes).replace(/^﻿/, "");
   const firstBreak = LINE_BREAK.exec(text);
   if (!firstBreak) throw new FormatError("The SDF file is missing the header and data records");
@@ -224,9 +223,7 @@ function readAscii(bytes: Uint8Array): { header: Header; z: Float32Array; traile
   const bcr = dialect === "BCR-1.0";
   const records = splitRecords(text.slice(firstBreak.index + firstBreak[0].length), bcr);
   if (records.length < 3) throw new FormatError("The SDF file must contain header, data and trailer records");
-  const [headerText, dataText, ...rest] = records as [string, string, ...string[]];
-  if (rest.length && rest[rest.length - 1] === "") rest.pop();
-  const trailer = rest.join("*").trim();
+  const [headerText, dataText] = records as [string, string, ...string[]];
 
   const fields = parseFields(headerText);
   const field = (key: string): string => {
@@ -268,7 +265,7 @@ function readAscii(bytes: Uint8Array): { header: Header; z: Float32Array; traile
   };
   const z = parseAsciiData(dataText, header, type, dialect);
   if (bcr) reverseRows(z, rows, columns);
-  return { header, z, trailer };
+  return { header, z };
 }
 
 function stripComment(line: string): string {
@@ -355,39 +352,27 @@ function latin1(bytes: Uint8Array): string {
   return text;
 }
 
-function describe(header: Header, trailer: string): InfoSection[] {
-  const g = (value: number): string => String(Number(value.toPrecision(10)));
-  const sections: InfoSection[] = [
-    {
-      title: "File",
-      rows: [
-        ["Format", `SDF, ${header.binary ? "binary" : "ASCII"}`],
-        ["Dialect", header.dialect],
-        ["Manufacturer", header.manufacturer || "not set"],
-        ["Created", header.created],
-        ["Modified", header.modified],
-      ],
-    },
-    {
-      title: "Data",
-      rows: [
-        ["Points per profile", String(header.columns)],
-        ["Profiles", String(header.rows)],
-        ["Step along x", formatLength(header.xScale)],
-        ["Step along y", formatLength(header.yScale)],
-        ["Height scale", g(header.zScale)],
-        ["Height resolution", header.zResolution < 0 ? "not known" : formatLength(header.zResolution)],
-        ["Data type", header.type.name],
-      ],
-    },
-  ];
-  if (trailer) {
-    const tagged = trailer.split(LINE_BREAK).map((line) => /^\s*(\w+)\s*=\s*(.*)$/.exec(line));
-    if (tagged.every((m) => m !== null)) {
-      sections.push({ title: "Trailer", rows: tagged.map((m) => [m![1] as string, (m![2] as string).trim()]) });
-    } else {
-      sections.push({ title: "Trailer", rows: [["Text", trailer]] });
-    }
-  }
-  return sections;
+const REVISIONS: Record<Dialect, string> = {
+  "ISO-1.0": "ISO 25178-71, version 1.0",
+  "ISO-2.0": "ISO 25178-71:2026, version 2.0",
+  "BCR-1.0": "BCR (EUR 15178 EN), version 1.0",
+};
+
+function describe(header: Header): InfoSection[] {
+  const feature = featureOf(false, header.rows);
+  return describeFile({
+    format: `SDF, ${header.binary ? "binary" : "ASCII"}`,
+    revision: REVISIONS[header.dialect],
+    feature,
+    layers: 1,
+    size: sizeText(feature, header.columns, header.rows),
+    step: stepText(feature, header.xScale, header.yScale),
+    dataType: `${header.type.name}, factor ${g(header.zScale)}`,
+    resolution: header.zResolution < 0 ? undefined : formatLength(header.zResolution),
+    source: [
+      ["Manufacturer", header.manufacturer],
+      ["Created", header.created],
+      ["Modified", header.modified],
+    ],
+  });
 }
