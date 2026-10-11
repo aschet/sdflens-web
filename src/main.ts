@@ -55,7 +55,7 @@ function applyColors(): void {
   view3d?.setBackground(colors.background);
   view2d?.setStyle(colors);
   profile?.setStyle(colors);
-  colorbar.setColors(colors.foreground, colors.background);
+  colorbar.setColors(colors.foreground);
 }
 
 function setTheme(theme: "light" | "dark" | null): void {
@@ -273,7 +273,7 @@ function loadLayer(index: number, keepView: boolean): void {
     markAxis();
   }
   if (view3d) view3d.setMesh(null);
-  colorbar.update(currentLut(), [stats.min, stats.max], stats.invalid > 0);
+  colorbar.update(currentLut(), [stats.min, stats.max]);
   const layers = file.layerCount;
   $("layerBar").hidden = layers < 2;
   app.dataset.layers = layers < 2 ? "one" : "many";
@@ -414,7 +414,7 @@ function applyColormap(): void {
   const lut = currentLut();
   view3d?.setLut(lut);
   view2d?.setLut(lut);
-  if (state.stats) colorbar.update(lut, [state.stats.min, state.stats.max], state.stats.invalid > 0);
+  if (state.stats) colorbar.update(lut, [state.stats.min, state.stats.max]);
 }
 
 colormapSelect.addEventListener("change", () => {

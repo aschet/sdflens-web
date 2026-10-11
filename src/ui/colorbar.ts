@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-/** The color scale next to the view: a gradient with ticks, and a swatch for points that are not measured. */
+/** The color scale of the view: a gradient with ticks. */
 
 import { formatTick, niceTicks, unitFor } from "../units";
 
@@ -10,14 +10,11 @@ const BAR_LEFT = 12;
 const BAR_WIDTH = 16;
 const TOP = 28;
 const BOTTOM = 12;
-const SWATCH = 14;
 
 export class Colorbar {
   private lut: Uint8Array | null = null;
   private range: [number, number] | null = null;
-  private hasInvalid = false;
   private foreground = "#e6e6e6";
-  private background = "#202227";
   private readonly observer: ResizeObserver;
 
   constructor(private readonly canvas: HTMLCanvasElement) {
@@ -25,16 +22,14 @@ export class Colorbar {
     this.observer.observe(canvas);
   }
 
-  update(lut: Uint8Array, range: [number, number], hasInvalid: boolean): void {
+  update(lut: Uint8Array, range: [number, number]): void {
     this.lut = lut;
     this.range = range;
-    this.hasInvalid = hasInvalid;
     this.draw();
   }
 
-  setColors(foreground: string, background: string): void {
+  setColors(foreground: string): void {
     this.foreground = foreground;
-    this.background = background;
     this.draw();
   }
 
@@ -50,8 +45,7 @@ export class Colorbar {
     context.clearRect(0, 0, width, height);
     const lut = this.lut;
     const range = this.range;
-    const legend = this.hasInvalid ? SWATCH + 10 : 0;
-    const barHeight = height - TOP - BOTTOM - legend;
+    const barHeight = height - TOP - BOTTOM;
     if (!lut || !range || barHeight < 20) return;
 
     const gradient = context.createLinearGradient(0, TOP, 0, TOP + barHeight);
@@ -82,14 +76,6 @@ export class Colorbar {
         context.stroke();
         context.fillText(formatTick(tick, factor), x + 7, y + 4);
       }
-    }
-    if (this.hasInvalid) {
-      const y = height - BOTTOM - SWATCH;
-      context.fillStyle = this.background;
-      context.fillRect(BAR_LEFT, y, SWATCH, SWATCH);
-      context.strokeRect(BAR_LEFT + 0.5, y + 0.5, SWATCH, SWATCH);
-      context.fillStyle = this.foreground;
-      context.fillText(width >= 110 ? "not measured" : "no data", BAR_LEFT + SWATCH + 5, y + SWATCH - 2);
     }
   }
 }

@@ -278,9 +278,8 @@ input:focus-visible,
   --rb: 56px;
 }
 
-#app[data-view="3d"] .stage,
 #app[data-view="2d"] .stage {
-  --rr: 132px;
+  --rr: 108px;
 }
 
 /* In the 3D view the tools float over the picture; the plots keep a margin for their axes. */
@@ -436,7 +435,7 @@ input:focus-visible,
   right: 12px;
   top: 12px;
   bottom: 56px;
-  width: 118px;
+  width: 84px;
   height: auto;
 }
 
@@ -741,9 +740,8 @@ input[type="range"] {
     --rb: 112px;
   }
 
-  #app[data-view="3d"] .stage,
   #app[data-view="2d"] .stage {
-    --rr: 108px;
+    --rr: 92px;
   }
 
   .bar {
@@ -792,7 +790,7 @@ input[type="range"] {
   }
 
   .colorbar {
-    width: 100px;
+    width: 76px;
     bottom: 110px;
   }
 
