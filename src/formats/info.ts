@@ -23,7 +23,7 @@ export interface Description {
   /** Says how the points of an irregular grid or of a cloud are positioned. */
   positions?: string;
   /** The data type in which each axis is stored, if it is stored; the names are the same for every format. */
-  types: { x?: string; y?: string; z?: string };
+  types: { x?: string; y?: string; z: string };
   resolution?: string;
   placement?: string;
   /** The fields of the instrument and of the probing system; those that a format does not have, or that are not given, show as "-". */
@@ -111,8 +111,8 @@ export function describeFile(d: Description): InfoSection[] {
   if (d.positions) data.rows.push(["Positions", d.positions]);
   const given = (value: string | undefined): string => (isPlaceholder(value) ? "-" : (value as string));
   // The types of the stored axes, in the order x, y, z.
-  const types = (["x", "y", "z"] as const).flatMap((axis) => (d.types[axis] ? [d.types[axis] as string] : []));
-  data.rows.push(["Type", types.length > 0 ? types.join(", ") : "-"]);
+  const types = [d.types.x, d.types.y, d.types.z].filter((type): type is string => type !== undefined);
+  data.rows.push(["Type", types.join(", ")]);
   if (d.resolution) data.rows.push(["Height resolution", d.resolution]);
   if (d.placement) data.rows.push(["Placement", d.placement]);
   const instrument: InfoSection = { title: "Instrument", rows: INSTRUMENT_FIELDS.map((field): [string, string] => [field, given(d.instrument[field])]) };

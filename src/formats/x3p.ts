@@ -309,7 +309,7 @@ function describe(c: Context): InfoSection[] {
     size: sizeText(feature, c.columns, c.rows),
     step: regular ? stepText(feature, Math.abs(c.x.increment), Math.abs(c.y.increment)) : undefined,
     positions: regular ? undefined : "stored for every point",
-    types: { x: typeName(c.x), y: typeName(c.y), z: typeName(c.z) },
+    types: { x: typeName(c.x), y: typeName(c.y), z: TYPE_NAMES[c.z.type] as string },
     placement: turned || offsets.some((offset) => offset !== 0) ? "stored in the file, not applied" : undefined,
     instrument: {
       Manufacturer: value("Instrument", "Manufacturer"),
