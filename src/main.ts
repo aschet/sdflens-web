@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 import './style.css';
+import { version } from '../package.json';
 import { buildLut, colormapNames, DEFAULT_COLORMAP } from './colormap';
 import { readFile } from './formats';
 import {
@@ -35,6 +36,7 @@ type ViewName = '3d' | '2d' | 'profile';
 // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters
 const $ = <T extends HTMLElement>(id: string): T => document.getElementById(id) as T;
 const app = $('app');
+$('aboutVersion').textContent = version;
 
 const state = {
   file: null as SurfaceFile | null,
