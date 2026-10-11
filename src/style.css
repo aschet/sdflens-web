@@ -322,6 +322,33 @@ input:focus-visible,
   box-shadow: var(--shadow);
 }
 
+/* The map that shows where the profile lies while the slider is dragged. */
+.locator {
+  top: 12px;
+  right: 12px;
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  padding: 6px;
+  color: var(--muted);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.15s, visibility 0.15s;
+}
+
+.locator.visible {
+  opacity: 1;
+  visibility: visible;
+}
+
+.locator canvas {
+  display: block;
+  border-radius: 4px;
+}
+
 .tools {
   left: 12px;
   top: 12px;
@@ -976,6 +1003,10 @@ input[type="range"] {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .locator {
+    transition: none;
+  }
+
   .spinner {
     animation-duration: 2.4s;
   }

@@ -12,6 +12,7 @@ import { View2D } from "./render/view2d";
 import { View3D, Z_FACTOR_MAX, Z_FACTOR_MIN, type RenderMode, type Tool } from "./render/view3d";
 import { SAMPLES } from "./samples";
 import { Colorbar } from "./ui/colorbar";
+import { Locator } from "./ui/locator";
 import { formatExtent, formatLength } from "./units";
 
 type ViewName = "3d" | "2d" | "profile";
@@ -42,6 +43,7 @@ let view2d: View2D | null = null;
 let profile: ProfilePlot | null = null;
 let webglProblem: string | null = null;
 const colorbar = new Colorbar($<HTMLCanvasElement>("colorbar"));
+const locator = new Locator($("locator"));
 
 // ------------------------------------------------------------------------------------------------ theme
 
@@ -169,6 +171,7 @@ function setView(name: ViewName): void {
   $("colorbarBox").hidden = name === "profile" || state.file === null;
   colorbar.draw();
   $("profileBar").hidden = name !== "profile";
+  locator.hide();
   $("modeField").hidden = name !== "3d";
   $("zField").hidden = name !== "3d";
   updateTools();
@@ -266,6 +269,7 @@ function loadLayer(index: number, keepView: boolean): void {
   state.surface = surface;
   state.stats = stats;
   state.extent = lateralRange(surface);
+  locator.hide();
   state.mesh = null;
   state.meshKeepView = keepView;
   if (!keepView) {
@@ -337,6 +341,21 @@ function profileText(index: number): string {
   return `${along ? "x" : "y"}=${formatLength(index * step)}, z=${z}`;
 }
 
+/** Shows where the profile lies on the surface, for as long as the slider is used. */
+function showLocator(): void {
+  const s = state.surface;
+  const stats = state.stats;
+  if (!s || !stats || s.kind !== "grid" || s.x !== null) return;
+  locator.show({
+    surface: s,
+    range: [stats.min, stats.max],
+    lut: currentLut,
+    lutKey: `${state.colormap}|${state.reverse}`,
+    axis: state.profileAxis,
+    index: state.profileIndex,
+  });
+}
+
 function markAxis(): void {
   for (const button of document.querySelectorAll<HTMLButtonElement>("#profileDirection button")) {
     button.setAttribute("aria-pressed", String(button.dataset.axis === state.profileAxis));
@@ -350,11 +369,19 @@ for (const button of document.querySelectorAll<HTMLButtonElement>("#profileDirec
     state.profileIndex = Math.floor((state.profileAxis === "x" ? s.rows : s.columns) / 2);
     markAxis();
     updateProfile();
+    showLocator();
   });
 }
 $("profileSlider").addEventListener("input", (event) => {
   state.profileIndex = Number((event.target as HTMLInputElement).value) - 1;
   updateProfile();
+  showLocator();
+});
+$("profileSlider").addEventListener("pointerdown", () => {
+  locator.hold();
+  showLocator();
+  window.addEventListener("pointerup", () => locator.release(), { once: true });
+  window.addEventListener("pointercancel", () => locator.release(), { once: true });
 });
 
 // ----------------------------------------------------------------------------------------- information
