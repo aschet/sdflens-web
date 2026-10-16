@@ -92,7 +92,7 @@ describe('layers and positions', () => {
     const absolute = axis('A', '1');
     const profile = (cx: string, cy: string, data: string[]): Uint8Array => {
       const xml =
-        `<?xml version="1.0"?><ISO5436_2><Record1><Revision>x</Revision><FeatureType>PRF</FeatureType><Axes>` +
+        `<?xml version="1.0"?><ISO5436_2><Record1><Revision>ISO5436 - 2000</Revision><FeatureType>PRF</FeatureType><Axes>` +
         `<CX>${cx}</CX><CY>${cy}</CY><CZ>${absolute}</CZ></Axes></Record1>` +
         `<Record3><MatrixDimension><SizeX>4</SizeX><SizeY>1</SizeY><SizeZ>1</SizeZ></MatrixDimension>` +
         `<DataList>${data.map((d) => `<Datum>${d}</Datum>`).join('')}</DataList></Record3></ISO5436_2>`;
@@ -141,7 +141,7 @@ describe('layers and positions', () => {
     const file = (feature: string | null, rows = 1): Uint8Array => {
       const data = [0, 1e-6, 3e-6, 4e-6].map((v) => `<Datum>${v};${v / 10}</Datum>`);
       const xml =
-        `<?xml version="1.0"?><ISO5436_2><Record1><Revision>x</Revision>` +
+        `<?xml version="1.0"?><ISO5436_2><Record1><Revision>ISO5436 - 2000</Revision>` +
         (feature === null ? '' : `<FeatureType>${feature}</FeatureType>`) +
         `<Axes><CX>${axis('A', '1')}</CX><CY>${axis('I', '1e-6')}</CY><CZ>${axis('A', '1')}</CZ></Axes></Record1>` +
         `<Record3><MatrixDimension><SizeX>${4 / rows}</SizeX><SizeY>${rows}</SizeY><SizeZ>1</SizeZ></MatrixDimension>` +
@@ -170,6 +170,33 @@ describe('layers and positions', () => {
       'Feature',
       'Surface',
     ]);
+  });
+
+  it('reads the two revisions of the standard and refuses another one', () => {
+    const axis = (type: string): string =>
+      `<AxisType>${type}</AxisType><DataType>D</DataType><Increment>1e-6</Increment><Offset>0</Offset>`;
+    const file = (revision: string | null): Uint8Array =>
+      zipSync({
+        'main.xml': strToU8(
+          `<?xml version="1.0"?><ISO5436_2><Record1>` +
+            (revision === null ? '' : `<Revision>${revision}</Revision>`) +
+            `<FeatureType>PRF</FeatureType><Axes><CX>${axis('I')}</CX><CY>${axis('I')}</CY><CZ>${axis('A')}</CZ></Axes></Record1>` +
+            `<Record3><MatrixDimension><SizeX>2</SizeX><SizeY>1</SizeY><SizeZ>1</SizeZ></MatrixDimension>` +
+            `<DataList><Datum>1e-7</Datum><Datum>2e-7</Datum></DataList></Record3></ISO5436_2>`,
+        ),
+      });
+    const shown = (revision: string | null): unknown =>
+      readFile(file(revision), 'r.x3p').info[0]?.rows.find(
+        ([label]) => label === 'Revision',
+      )?.[1];
+
+    expect(shown('ISO25178-72:2017/DAM1')).toBe('ISO25178-72:2017/DAM1');
+    expect(shown('ISO5436 - 2000')).toBe('ISO5436 - 2000');
+    // Some software writes another dash than the hyphen.
+    expect(shown('ISO5436 \u2013 2000')).toBe('ISO5436 - 2000');
+    expect(shown(null)).toBe('not set');
+    expect(() => readFile(file('future'), 'r.x3p')).toThrow(/Unknown revision future/);
+    expect(() => readFile(file('ISO5436-2000'), 'r.x3p')).toThrow(FormatError);
   });
 
   it('puts the first row of a BCR file at y = 0 like the other dialects', () => {

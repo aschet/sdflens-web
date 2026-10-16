@@ -96,6 +96,7 @@ export function readX3p(bytes: Uint8Array, name: string): SurfaceFile {
     layers = 1;
   }
   const cloud = !matrix;
+  revisionOf(record1);
   const declared = text(child(record1, 'FeatureType'));
   if (declared !== undefined && !FEATURE_TYPES.includes(declared))
     throw new FormatError(`Unknown FeatureType ${declared}`);
@@ -403,6 +404,22 @@ function profileStep(
 
 const FEATURE_TYPES = ['PRF', 'SUR', 'PCL'];
 
+/** The revisions that are read: ISO 25178-72:2017 and Amd 1:2020, as the text of the Revision element. */
+const REVISIONS = ['ISO5436 - 2000', 'ISO25178-72:2017/DAM1'];
+
+/**
+ * The revision of a file as its text, with any dash read as the hyphen. A file without one is read as ISO 25178-72:2017.
+ *
+ * @throws FormatError if the text is none of the known revisions.
+ */
+function revisionOf(record1: Element): string | undefined {
+  const given = text(child(record1, 'Revision'));
+  if (given === undefined) return undefined;
+  const revision = given.replace(/[\u2010-\u2015\u2212]/g, '-');
+  if (!REVISIONS.includes(revision)) throw new FormatError(`Unknown revision ${given}`);
+  return revision;
+}
+
 interface Layout {
   cloud: boolean;
   /** Whether the data is a profile, which the type of the file decides. */
@@ -562,7 +579,7 @@ function describe(c: Context): InfoSection[] {
 
   return describeFile({
     format: `x3p ${c.binary ? 'binary' : 'XML'}`,
-    revision: text(child(c.record1, 'Revision')) ?? 'not set',
+    revision: revisionOf(c.record1) ?? 'not set',
     feature,
     size: sizeText(feature, c.columns, c.rows),
     step: regular
