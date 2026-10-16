@@ -643,7 +643,8 @@ input:focus-visible,
   max-height: calc(100% - var(--bar) - 20px);
   overflow-y: auto;
   background: color-mix(in srgb, var(--surface) 72%, transparent);
-  backdrop-filter: blur(8px);
+  /* A strong blur washes out the thin lines of a plot behind the panel, which then looks solid. */
+  backdrop-filter: blur(2px);
   border: 1px solid var(--border);
   border-radius: 12px;
   box-shadow: var(--shadow);
