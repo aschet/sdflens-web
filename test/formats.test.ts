@@ -199,7 +199,7 @@ describe('layers and positions', () => {
     expect(() => readFile(file('ISO5436-2000'), 'r.x3p')).toThrow(FormatError);
   });
 
-  it('puts the first row of a BCR file at y = 0 like the other dialects', () => {
+  it('puts the first row of a BCR file at y = 0 like the other revisions', () => {
     const bcr = readFile(load('bcr1_surface_binary.sdf'), 'bcr.sdf').layer(0);
     const iso = readFile(load('iso1_surface_binary.sdf'), 'iso.sdf').layer(0);
     const rowsWithGaps = (z: Float32Array, columns: number): number[] => {
