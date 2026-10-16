@@ -27,7 +27,6 @@ export interface Description {
   /** The data type in which each axis is stored, if it is stored; the names are the same for every format. */
   types: { x?: string | undefined; y?: string | undefined; z: string };
   resolution?: string | undefined;
-  placement?: string | undefined;
   /** The fields of the instrument and of the probing system; those that a format does not have, or that are not given, show as "-". */
   instrument: Partial<Record<InstrumentField, string | undefined>>;
   probing: Partial<Record<ProbingField, string | undefined>>;
@@ -176,7 +175,6 @@ export function describeFile(d: Description): InfoSection[] {
   const given = (value: string | undefined): string =>
     isPlaceholder(value) ? '-' : (value as string);
   if (d.resolution) data.rows.push(['Height resolution', d.resolution]);
-  if (d.placement) data.rows.push(['Placement', d.placement]);
   const instrument: InfoSection = {
     title: 'Instrument',
     rows: INSTRUMENT_FIELDS.map((field): [string, string] => [
