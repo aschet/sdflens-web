@@ -20,7 +20,6 @@ import { ProfilePlot } from './render/profile';
 import { View2D } from './render/view2d';
 import { View3D, type RenderMode, type Tool } from './render/view3d';
 import {
-  alongAxis,
   canRun,
   middleProfile,
   profileReadout,
@@ -290,7 +289,7 @@ async function openBytes(bytes: Uint8Array, name: string): Promise<void> {
     app.dataset.state = 'loaded';
     $('fileName').textContent = name;
     $('fileName').title = name;
-    document.title = `${name} · sdflens web`;
+    document.title = `${name} · sdflens`;
     setView(startView(state.surface as Surface, available()));
   } catch (error) {
     toast(
@@ -358,7 +357,7 @@ function updateProfile(): void {
     state.profileAxis,
     state.profileIndex,
   );
-  plot.setSeries(values, step, alongAxis(s, state.profileAxis), positions);
+  plot.setSeries(values, step, positions);
   const slider = $<HTMLInputElement>('profileSlider');
   slider.max = String(count);
   slider.value = String(state.profileIndex + 1);
@@ -377,11 +376,7 @@ function updateProfile(): void {
 
 function profileText(index: number): string {
   if (index < 0 || !profile || !state.surface) return '';
-  return profileReadout(
-    alongAxis(state.surface, state.profileAxis),
-    profile.positionAt(index),
-    profile.valueAt(index),
-  );
+  return profileReadout(profile.positionAt(index), profile.valueAt(index));
 }
 
 /** Shows where the profile lies on the surface, for as long as the slider is used. */
@@ -456,6 +451,13 @@ function renderInfo(): void {
   for (const section of file.info) {
     const heading = document.createElement('h3');
     heading.textContent = section.title;
+    if (section.text !== undefined) {
+      const text = document.createElement('p');
+      text.className = 'info-text';
+      text.textContent = section.text;
+      body.append(heading, text);
+      continue;
+    }
     const list = document.createElement('dl');
     for (const [label, value] of section.rows) {
       const term = document.createElement('dt');

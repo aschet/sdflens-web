@@ -19,11 +19,15 @@ export interface Surface {
   /** Positions of the points when the axes are not regular, otherwise null. */
   x: Float32Array | null;
   y: Float32Array | null;
+  /** Set for a profile whose points have positions of their own, which the type of the file declares. */
+  profile?: boolean;
 }
 
 export interface InfoSection {
   title: string;
   rows: [label: string, value: string][];
+  /** Free text of its own, such as the comment of a file, instead of rows. */
+  text?: string;
 }
 
 export interface SurfaceFile {
@@ -95,14 +99,34 @@ export function lateralRange(surface: Surface): {
   return { x, y };
 }
 
-/** The positions along a profile of a single row or column whose points are irregularly spaced, in increasing order. */
+/** The distance of each point from the first one along the path through the points, in the plane of x and y. */
+export function lengthAlong(x: Float32Array, y: Float32Array): Float32Array {
+  const lengths = new Float32Array(x.length);
+  let total = 0;
+  for (let i = 1; i < x.length; i++) {
+    total += Math.hypot(
+      (x[i] as number) - (x[i - 1] as number),
+      (y[i] as number) - (y[i - 1] as number),
+    );
+    lengths[i] = total;
+  }
+  return lengths;
+}
+
+/**
+ * The positions along a profile of a single row or column whose points are irregularly spaced or do not lie on an
+ * axis: the length along the path from the first point, which is 0.
+ */
 export function irregularProfile(
   surface: Surface,
 ): { axis: 'x' | 'y'; positions: Float32Array } | null {
-  if (surface.kind !== 'grid' || !surface.x || !surface.y) return null;
-  if (surface.rows === 1 && surface.columns > 1)
-    return { axis: 'x', positions: surface.x };
-  if (surface.columns === 1 && surface.rows > 1)
-    return { axis: 'y', positions: surface.y };
-  return null;
+  if (surface.kind !== 'grid' || !surface.profile || !surface.x || !surface.y)
+    return null;
+  const axis =
+    surface.rows === 1 && surface.columns > 1
+      ? 'x'
+      : surface.columns === 1 && surface.rows > 1
+        ? 'y'
+        : null;
+  return axis && { axis, positions: lengthAlong(surface.x, surface.y) };
 }

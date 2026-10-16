@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-/** Reader for ISO 25178-71 SDF files: the dialects ISO-1.0, ISO-2.0 and BCR-1.0, ASCII and binary. */
+/** Reader for ISO 25178-71 SDF files: the revisions ISO-1.0, ISO-2.0 and BCR-1.0, ASCII and binary. */
 
 import {
   FormatError,
@@ -12,15 +12,16 @@ import {
 } from '../model';
 import { formatLength } from '../units';
 import {
+  axisText,
   describeFile,
   featureOf,
   formatDate,
   safely,
-  sizeText,
+  dimensionText,
   stepText,
 } from './info';
 
-type Dialect = 'ISO-1.0' | 'ISO-2.0' | 'BCR-1.0';
+type Revision = 'ISO-1.0' | 'ISO-2.0' | 'BCR-1.0';
 
 interface DataType {
   name: string;
@@ -29,19 +30,26 @@ interface DataType {
   /** The smallest and the largest value, which mark a point that is not measured in ISO and in BCR. */
   min: number;
   max: number;
-  dialects: Dialect[];
+  revisions: Revision[];
 }
 
-const ALL: Dialect[] = ['ISO-1.0', 'ISO-2.0', 'BCR-1.0'];
+const ALL: Revision[] = ['ISO-1.0', 'ISO-2.0', 'BCR-1.0'];
 const DATA_TYPES: Record<number, DataType> = {
-  0: { name: 'uint8', size: 1, integer: true, min: 0, max: 255, dialects: ['BCR-1.0'] },
+  0: {
+    name: 'uint8',
+    size: 1,
+    integer: true,
+    min: 0,
+    max: 255,
+    revisions: ['BCR-1.0'],
+  },
   1: {
     name: 'uint16',
     size: 2,
     integer: true,
     min: 0,
     max: 65535,
-    dialects: ['BCR-1.0'],
+    revisions: ['BCR-1.0'],
   },
   2: {
     name: 'uint32',
@@ -49,7 +57,7 @@ const DATA_TYPES: Record<number, DataType> = {
     integer: true,
     min: 0,
     max: 4294967295,
-    dialects: ['BCR-1.0'],
+    revisions: ['BCR-1.0'],
   },
   3: {
     name: 'float32',
@@ -57,7 +65,7 @@ const DATA_TYPES: Record<number, DataType> = {
     integer: false,
     min: -3.4028234663852886e38,
     max: 3.4028234663852886e38,
-    dialects: ['ISO-2.0', 'BCR-1.0'],
+    revisions: ['ISO-2.0', 'BCR-1.0'],
   },
   4: {
     name: 'int8',
@@ -65,16 +73,16 @@ const DATA_TYPES: Record<number, DataType> = {
     integer: true,
     min: -128,
     max: 127,
-    dialects: ['ISO-2.0', 'BCR-1.0'],
+    revisions: ['ISO-2.0', 'BCR-1.0'],
   },
-  5: { name: 'int16', size: 2, integer: true, min: -32768, max: 32767, dialects: ALL },
+  5: { name: 'int16', size: 2, integer: true, min: -32768, max: 32767, revisions: ALL },
   6: {
     name: 'int32',
     size: 4,
     integer: true,
     min: -2147483648,
     max: 2147483647,
-    dialects: ALL,
+    revisions: ALL,
   },
   7: {
     name: 'float64',
@@ -82,7 +90,7 @@ const DATA_TYPES: Record<number, DataType> = {
     integer: false,
     min: -Number.MAX_VALUE,
     max: Number.MAX_VALUE,
-    dialects: ALL,
+    revisions: ALL,
   },
 };
 
@@ -104,7 +112,7 @@ const BCR_CHECK: Record<string, number> = { NULL: 0, NONE: 0, UINTTRACE: 1 };
 const BCR_FLOAT_BAD: Record<number, number> = { 4: 3.4e38, 8: 1.7e308 };
 
 interface Header {
-  dialect: Dialect;
+  revision: Revision;
   binary: boolean;
   manufacturer: string;
   created: string;
@@ -148,17 +156,17 @@ export function readSdf(bytes: Uint8Array, name: string): SurfaceFile {
   };
 }
 
-function resolveDialect(text: string, magic: string): Dialect {
+function resolveRevision(text: string, magic: string): Revision {
   if (text === 'ISO-1.0' || text === 'ISO-2.0' || text === 'BCR-1.0') return text;
-  throw new FormatError(`Unknown or unsupported SDF dialect in magic "${magic}"`);
+  throw new FormatError(`Unknown or unsupported SDF revision in magic "${magic}"`);
 }
 
-function requireType(code: number, dialect: Dialect): DataType {
+function requireType(code: number, revision: Revision): DataType {
   const type = DATA_TYPES[code];
   if (type === undefined) throw new FormatError(`Unknown SDF data type code ${code}`);
-  if (!type.dialects.includes(dialect)) {
+  if (!type.revisions.includes(revision)) {
     throw new FormatError(
-      `The data type ${type.name} is not valid for the dialect ${dialect}`,
+      `The data type ${type.name} is not valid for the revision ${revision}`,
     );
   }
   return type;
@@ -171,8 +179,8 @@ function requireUnprocessed(compression: number, check: number): void {
 }
 
 /** Whether a stored value marks a point that is not measured. */
-function invalidTest(type: DataType, dialect: Dialect): (value: number) => boolean {
-  if (dialect === 'BCR-1.0') {
+function invalidTest(type: DataType, revision: Revision): (value: number) => boolean {
+  if (revision === 'BCR-1.0') {
     if (!type.integer) {
       const limit = BCR_FLOAT_BAD[type.size] as number;
       return (value) => value >= limit;
@@ -198,8 +206,8 @@ function readBinary(bytes: Uint8Array): { header: Header; z: Float32Array } {
   const magic = latin1(bytes.subarray(0, 8));
   if (!/^[abAB][A-Z]{3}-\d\.\d$/.test(magic))
     throw new FormatError(`Not an SDF file, unexpected magic: "${magic}"`);
-  const dialect = resolveDialect(magic.slice(1), magic);
-  const wide = dialect === 'ISO-2.0';
+  const revision = resolveRevision(magic.slice(1), magic);
+  const wide = revision === 'ISO-2.0';
   const headerSize = wide ? 85 : 81;
   if (bytes.length < headerSize)
     throw new FormatError('The file is too short to contain an SDF header');
@@ -229,7 +237,7 @@ function readBinary(bytes: Uint8Array): { header: Header; z: Float32Array } {
   const code = view.getUint8(at + 33);
   const check = view.getUint8(at + 34);
   requireUnprocessed(compression, check);
-  const type = requireType(code, dialect);
+  const type = requireType(code, revision);
 
   const count = columns * rows;
   const byteCount = count * type.size;
@@ -239,13 +247,13 @@ function readBinary(bytes: Uint8Array): { header: Header; z: Float32Array } {
     bytes.byteOffset + headerSize,
     bytes.byteOffset + headerSize + byteCount,
   ) as ArrayBuffer;
-  const z = decodeRaw(raw, type, zScale, dialect, count);
-  if (dialect === 'BCR-1.0') reverseRows(z, rows, columns);
+  const z = decodeRaw(raw, type, zScale, revision, count);
+  if (revision === 'BCR-1.0') reverseRows(z, rows, columns);
   const header: Header = {
-    dialect,
+    revision,
     binary: true,
     manufacturer,
-    created: isoDate(created, dialect === 'ISO-2.0'),
+    created: isoDate(created, revision === 'ISO-2.0'),
     columns,
     rows,
     xScale,
@@ -261,11 +269,11 @@ function decodeRaw(
   raw: ArrayBuffer,
   type: DataType,
   zScale: number,
-  dialect: Dialect,
+  revision: Revision,
   count: number,
 ): Float32Array {
   const stored = storedArray(raw, type);
-  const invalid = invalidTest(type, dialect);
+  const invalid = invalidTest(type, revision);
   const out = new Float32Array(count);
   for (let i = 0; i < count; i++) {
     const value = stored[i] as number;
@@ -317,8 +325,8 @@ function readAscii(bytes: Uint8Array): { header: Header; z: Float32Array } {
   const magic = /^([abAB])([A-Z]{3})-(\d\.\d)$/.exec(stripComment(magicLine).trim());
   if (!magic)
     throw new FormatError(`Not an ASCII SDF file, unexpected magic: "${magicLine}"`);
-  const dialect = resolveDialect(`${magic[2]}-${magic[3]}`, magicLine);
-  const bcr = dialect === 'BCR-1.0';
+  const revision = resolveRevision(`${magic[2]}-${magic[3]}`, magicLine);
+  const bcr = revision === 'BCR-1.0';
   const records = splitRecords(
     text.slice(firstBreak.index + firstBreak[0].length),
     bcr,
@@ -358,7 +366,7 @@ function readAscii(bytes: Uint8Array): { header: Header; z: Float32Array } {
   };
 
   const code = coded('DataType', BCR_DATA_TYPES);
-  const type = requireType(code, dialect);
+  const type = requireType(code, revision);
   requireUnprocessed(
     coded('Compression', BCR_COMPRESSION),
     coded('CheckType', BCR_CHECK),
@@ -367,10 +375,10 @@ function readAscii(bytes: Uint8Array): { header: Header; z: Float32Array } {
   const rows = integer('NumProfiles');
   const zScale = float('Zscale');
   const header: Header = {
-    dialect,
+    revision,
     binary: false,
     manufacturer: field('ManufacID').trim(),
-    created: isoDate(field('CreateDate'), dialect === 'ISO-2.0'),
+    created: isoDate(field('CreateDate'), revision === 'ISO-2.0'),
     columns,
     rows,
     xScale: float('Xscale'),
@@ -379,7 +387,7 @@ function readAscii(bytes: Uint8Array): { header: Header; z: Float32Array } {
     zResolution: float('Zresolution'),
     type,
   };
-  const z = parseAsciiData(dataText, header, type, dialect);
+  const z = parseAsciiData(dataText, header, type, revision);
   if (bcr) reverseRows(z, rows, columns);
   return { header, z };
 }
@@ -419,13 +427,13 @@ function parseAsciiData(
   text: string,
   header: Header,
   type: DataType,
-  dialect: Dialect,
+  revision: Revision,
 ): Float32Array {
   const expected = header.columns * header.rows;
   const out = new Float32Array(expected);
-  const invalid = invalidTest(type, dialect);
+  const invalid = invalidTest(type, revision);
   // ISO writes BAD for a point that is not measured, BCR the largest value of the type.
-  const markedByValue = dialect === 'BCR-1.0';
+  const markedByValue = revision === 'BCR-1.0';
   const scale = header.zScale;
   let count = 0;
   let start = -1;
@@ -479,15 +487,16 @@ function describe(header: Header): InfoSection[] {
   const feature = featureOf(false, header.columns, header.rows);
   return describeFile({
     format: `SDF ${header.binary ? 'binary' : 'ASCII'}`,
-    revision: header.dialect,
+    revision: header.revision,
     feature,
-    size: sizeText(feature, header.columns, header.rows),
+    dimension: dimensionText(feature, header.columns, header.rows),
     step: stepText(feature, header.xScale, header.yScale, header.columns),
+    axis: axisText(false, false, true),
     // The lateral axes are given by their steps; only the heights are stored.
     types: { z: header.type.name },
     resolution: header.zResolution < 0 ? undefined : formatLength(header.zResolution),
     // An SDF file names only the manufacturer.
-    creation: formatDate(header.created),
+    date: formatDate(header.created),
     instrument: { Manufacturer: header.manufacturer },
     probing: {},
   });

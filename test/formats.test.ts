@@ -92,7 +92,7 @@ describe('layers and positions', () => {
     const absolute = axis('A', '1');
     const profile = (cx: string, cy: string, data: string[]): Uint8Array => {
       const xml =
-        `<?xml version="1.0"?><ISO5436_2><Record1><Revision>x</Revision><FeatureType>PRF</FeatureType><Axes>` +
+        `<?xml version="1.0"?><ISO5436_2><Record1><Revision>ISO5436 - 2000</Revision><FeatureType>PRF</FeatureType><Axes>` +
         `<CX>${cx}</CX><CY>${cy}</CY><CZ>${absolute}</CZ></Axes></Record1>` +
         `<Record3><MatrixDimension><SizeX>4</SizeX><SizeY>1</SizeY><SizeZ>1</SizeZ></MatrixDimension>` +
         `<DataList>${data.map((d) => `<Datum>${d}</Datum>`).join('')}</DataList></Record3></ISO5436_2>`;
@@ -112,6 +112,10 @@ describe('layers and positions', () => {
     expect(irregularProfile(diagonal)).toMatchObject({ axis: 'x' });
     expect(diagonal.x?.[3]).toBeCloseTo(3e-6, 12);
     expect(diagonal.y?.[3]).toBeCloseTo(3e-6, 12);
+    // Its positions are the lengths along the path, which starts at 0.
+    const lengths = irregularProfile(diagonal)?.positions;
+    expect(lengths?.[0]).toBe(0);
+    expect(lengths?.[3]).toBeCloseTo(3e-6 * Math.SQRT2, 12);
     // Garbage along it falls back to the step of the other axis, and says so.
     const along = readFile(profile(absolute, incremental, junk), 'b.x3p');
     expect(along.layer(0)).toMatchObject({ x: null, stepAssumed: true });
@@ -130,7 +134,72 @@ describe('layers and positions', () => {
     expect(even.stepX).toBeCloseTo(2e-6, 12);
   });
 
-  it('puts the first row of a BCR file at y = 0 like the other dialects', () => {
+  it('lets the declared type decide whether data of one row is a profile', () => {
+    const axis = (type: string, increment: string): string =>
+      `<AxisType>${type}</AxisType><DataType>D</DataType><Increment>${increment}</Increment><Offset>0</Offset>`;
+    // Uneven positions along x: not on a regular grid.
+    const file = (feature: string | null, rows = 1): Uint8Array => {
+      const data = [0, 1e-6, 3e-6, 4e-6].map((v) => `<Datum>${v};${v / 10}</Datum>`);
+      const xml =
+        `<?xml version="1.0"?><ISO5436_2><Record1><Revision>ISO5436 - 2000</Revision>` +
+        (feature === null ? '' : `<FeatureType>${feature}</FeatureType>`) +
+        `<Axes><CX>${axis('A', '1')}</CX><CY>${axis('I', '1e-6')}</CY><CZ>${axis('A', '1')}</CZ></Axes></Record1>` +
+        `<Record3><MatrixDimension><SizeX>${4 / rows}</SizeX><SizeY>${rows}</SizeY><SizeZ>1</SizeZ></MatrixDimension>` +
+        `<DataList>${data.join('')}</DataList></Record3></ISO5436_2>`;
+      return zipSync({ 'main.xml': strToU8(xml) });
+    };
+    const layer = (
+      feature: string | null,
+      rows = 1,
+    ): ReturnType<typeof irregularProfile> =>
+      irregularProfile(readFile(file(feature, rows), 'p.x3p').layer(0));
+
+    expect(layer('PRF')).toMatchObject({ axis: 'x' });
+    // A surface of one row is a surface, however irregular its points are.
+    expect(layer('SUR')).toBeNull();
+    // A file without a type is judged by its shape.
+    expect(layer(null)).toMatchObject({ axis: 'x' });
+    // A profile has a single row: with more it is a surface.
+    expect(layer('PRF', 2)).toBeNull();
+    expect(() => readFile(file('XYZ'), 'p.x3p')).toThrow(/Unknown FeatureType XYZ/);
+    expect(readFile(file('PRF'), 'p.x3p').info[0]?.rows).toContainEqual([
+      'Feature',
+      'Profile',
+    ]);
+    expect(readFile(file('SUR'), 'p.x3p').info[0]?.rows).toContainEqual([
+      'Feature',
+      'Surface',
+    ]);
+  });
+
+  it('reads the two revisions of the standard and refuses another one', () => {
+    const axis = (type: string): string =>
+      `<AxisType>${type}</AxisType><DataType>D</DataType><Increment>1e-6</Increment><Offset>0</Offset>`;
+    const file = (revision: string | null): Uint8Array =>
+      zipSync({
+        'main.xml': strToU8(
+          `<?xml version="1.0"?><ISO5436_2><Record1>` +
+            (revision === null ? '' : `<Revision>${revision}</Revision>`) +
+            `<FeatureType>PRF</FeatureType><Axes><CX>${axis('I')}</CX><CY>${axis('I')}</CY><CZ>${axis('A')}</CZ></Axes></Record1>` +
+            `<Record3><MatrixDimension><SizeX>2</SizeX><SizeY>1</SizeY><SizeZ>1</SizeZ></MatrixDimension>` +
+            `<DataList><Datum>1e-7</Datum><Datum>2e-7</Datum></DataList></Record3></ISO5436_2>`,
+        ),
+      });
+    const shown = (revision: string | null): unknown =>
+      readFile(file(revision), 'r.x3p').info[0]?.rows.find(
+        ([label]) => label === 'Revision',
+      )?.[1];
+
+    expect(shown('ISO25178-72:2017/DAM1')).toBe('ISO25178-72:2017/DAM1');
+    expect(shown('ISO5436 - 2000')).toBe('ISO5436 - 2000');
+    // Some software writes another dash than the hyphen.
+    expect(shown('ISO5436 \u2013 2000')).toBe('ISO5436 - 2000');
+    expect(shown(null)).toBe('not set');
+    expect(() => readFile(file('future'), 'r.x3p')).toThrow(/Unknown revision future/);
+    expect(() => readFile(file('ISO5436-2000'), 'r.x3p')).toThrow(FormatError);
+  });
+
+  it('puts the first row of a BCR file at y = 0 like the other revisions', () => {
     const bcr = readFile(load('bcr1_surface_binary.sdf'), 'bcr.sdf').layer(0);
     const iso = readFile(load('iso1_surface_binary.sdf'), 'iso.sdf').layer(0);
     const rowsWithGaps = (z: Float32Array, columns: number): number[] => {

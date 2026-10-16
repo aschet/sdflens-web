@@ -4,7 +4,6 @@
 
 import { describe, expect, it } from 'vitest';
 import {
-  alongAxis,
   canRun,
   middleProfile,
   profileReadout,
@@ -51,8 +50,6 @@ describe('profiles', () => {
     const series = profileSeries(unevenProfile([0, 1, 3, 8]), 'x', 0);
     expect(Array.from(series.positions as Float32Array)).toEqual([0, 1, 3, 8]);
     expect(series).toMatchObject({ count: 1, step: 8 / 3 });
-    expect(alongAxis(unevenProfile([0, 1, 3]), 'y')).toBe('x');
-    expect(alongAxis(surface, 'y')).toBe('y');
   });
 
   it('can run along an axis only if there is more than one point along it', () => {
@@ -61,9 +58,23 @@ describe('profiles', () => {
     expect([canRun(grid(5, 1), 'x'), canRun(grid(5, 1), 'y')]).toEqual([false, true]);
   });
 
-  it('reads a point as its position and height', () => {
-    expect(profileReadout('x', 2.5e-6, 4e-9)).toBe('x=2.5 µm, z=4 nm');
-    expect(profileReadout('y', 0, Number.NaN)).toBe('y=0 m, z=not measured');
+  it('reads a point as its length along the profile and its height', () => {
+    expect(profileReadout(2.5e-6, 4e-9)).toBe('l=2.5 µm, z=4 nm');
+    expect(profileReadout(0, Number.NaN)).toBe('l=0 m, z=not measured');
+  });
+
+  it('measures a profile that does not run along an axis along its path', () => {
+    const diagonal = {
+      ...unevenProfile([0, 3, 6]),
+      y: Float32Array.from([0, 4, 8]),
+    };
+    expect(
+      Array.from(profileSeries(diagonal, 'x', 0).positions as Float32Array),
+    ).toEqual([0, 5, 10]);
+    const vertical = { ...unevenProfile([0, 0, 0]), y: Float32Array.from([2, 5, 9]) };
+    expect(
+      Array.from(profileSeries(vertical, 'x', 0).positions as Float32Array),
+    ).toEqual([0, 3, 7]);
   });
 });
 

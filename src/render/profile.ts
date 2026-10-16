@@ -130,7 +130,6 @@ export class ProfilePlot {
   private step = 1;
   /** The positions of the points of an irregular profile, in increasing order, or null for a regular one. */
   private positions: Float32Array | null = null;
-  private axis = 'x';
   private readonly view = new ProfileViewport();
   private hover = -1;
   private tool: 'pan' | 'zoom' = 'pan';
@@ -202,19 +201,17 @@ export class ProfilePlot {
   }
 
   /**
-   * Shows ``values`` along ``axis``, spaced ``step`` meters apart, or at ``positions`` if the profile is irregular. A
+   * Shows ``values`` along the length l, spaced ``step`` meters apart, or at ``positions`` if the profile is irregular. A
    * series of the same size keeps the zoom.
    */
   setSeries(
     values: Float32Array,
     step: number,
-    axis: string,
     positions: Float32Array | null = null,
   ): void {
     this.values = values;
     this.step = step;
     this.positions = positions;
-    this.axis = axis;
     this.hover = -1;
     this.view.setSeries(values.length, step, positions);
     this.requestRender();
@@ -347,7 +344,7 @@ export class ProfilePlot {
         lo: Math.max(xLo, this.view.full()[0]),
         hi: Math.min(xHi, this.view.full()[1]),
         toScreen: (v) => LEFT + this.view.pixelAt(v),
-        title: this.axis,
+        title: 'l',
       },
       { lo: zLo, hi: zHi, toScreen: (v) => bottom - (v - zLo) * factor, title: 'z' },
       this.style,

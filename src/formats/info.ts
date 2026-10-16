@@ -16,10 +16,14 @@ export interface Description {
   feature: Feature;
   /** Who created the data, and when; undefined if the file does not say. */
   creator?: string | undefined;
-  creation?: string | undefined;
-  size: string;
+  date?: string | undefined;
+  /** The free text that describes the data; shown in a section of its own, only if the file has one. */
+  comment?: string | undefined;
+  dimension: string;
   /** The distance between the points of a regular grid; "irregular" for an irregular grid and a cloud. */
   step: string;
+  /** Whether each axis x, y, z is incremental or absolute, as in "inc, inc, abs"; in the order of the types. */
+  axis: string;
   /** The data type in which each axis is stored, if it is stored; the names are the same for every format. */
   types: { x?: string | undefined; y?: string | undefined; z: string };
   resolution?: string | undefined;
@@ -48,11 +52,21 @@ export function isPlaceholder(value: string | undefined): boolean {
 }
 
 /** A profile is a surface of a single row or a single column. */
-export function featureOf(cloud: boolean, columns: number, rows: number): Feature {
-  return cloud ? 'Point cloud' : rows === 1 || columns === 1 ? 'Profile' : 'Surface';
+export function featureOf(
+  cloud: boolean,
+  columns: number,
+  rows: number,
+  profile: boolean = rows === 1 || columns === 1,
+): Feature {
+  return cloud ? 'Point cloud' : profile ? 'Profile' : 'Surface';
 }
 
-export function sizeText(feature: Feature, columns: number, rows: number): string {
+/** The kind of the axes x, y and z: incremental for a regular grid, or absolute with a position for each point. */
+export function axisText(x: boolean, y: boolean, z: boolean): string {
+  return [x, y, z].map((absolute) => (absolute ? 'abs' : 'inc')).join(', ');
+}
+
+export function dimensionText(feature: Feature, columns: number, rows: number): string {
   const count = (value: number): string => value.toLocaleString('en');
   return feature === 'Surface'
     ? `${count(columns)} × ${count(rows)} points`
@@ -143,7 +157,7 @@ export function describeFile(d: Description): InfoSection[] {
       ['Revision', d.revision],
       ['Feature', d.feature],
       ['Creator', isPlaceholder(d.creator) ? '-' : (d.creator as string)],
-      ['Creation', isPlaceholder(d.creation) ? '-' : (d.creation as string)],
+      ['Date', isPlaceholder(d.date) ? '-' : (d.date as string)],
     ],
   };
   // The types of the stored axes, in the order x, y, z.
@@ -153,8 +167,9 @@ export function describeFile(d: Description): InfoSection[] {
   const data: InfoSection = {
     title: 'Data',
     rows: [
+      ['Axis', d.axis],
       ['Type', types.join(', ')],
-      ['Size', d.size],
+      ['Dimension', d.dimension],
     ],
   };
   data.rows.push(['Step', d.step]);
@@ -176,5 +191,9 @@ export function describeFile(d: Description): InfoSection[] {
       given(d.probing[field]),
     ]),
   };
-  return [file, data, instrument, probing];
+  const sections = [file, data, instrument, probing];
+  // The comment can be long, so it has a section of its own at the end.
+  if (!isPlaceholder(d.comment))
+    sections.push({ title: 'Comment', rows: [], text: (d.comment as string).trim() });
+  return sections;
 }

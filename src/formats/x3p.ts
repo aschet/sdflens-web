@@ -12,11 +12,12 @@ import {
   type SurfaceFile,
 } from '../model';
 import {
+  axisText,
   describeFile,
   featureOf,
   formatDate,
   safely,
-  sizeText,
+  dimensionText,
   stepText,
 } from './info';
 
@@ -96,6 +97,17 @@ export function readX3p(bytes: Uint8Array, name: string): SurfaceFile {
     layers = 1;
   }
   const cloud = !matrix;
+  revisionOf(record1);
+  const declared = text(child(record1, 'FeatureType'));
+  if (declared !== undefined && !FEATURE_TYPES.includes(declared))
+    throw new FormatError(`Unknown FeatureType ${declared}`);
+  // The declared type decides, as far as the data allows it: a profile has a single row. A file without it is
+  // judged by its shape.
+  const isProfile =
+    !cloud &&
+    (declared === undefined
+      ? rows === 1 || columns === 1
+      : declared === 'PRF' && rows === 1);
   const points = columns * rows;
   if (cloud && (!x.absolute || !y.absolute))
     throw new FormatError('The axes of a point cloud must be absolute');
@@ -157,7 +169,7 @@ export function readX3p(bytes: Uint8Array, name: string): SurfaceFile {
 
   const layer = (index: number): Surface => {
     const arrays = decode(index);
-    return toSurface(arrays, { cloud, columns, rows, x, y });
+    return toSurface(arrays, { cloud, isProfile, columns, rows, x, y });
   };
   return {
     format: 'x3p',
@@ -170,6 +182,7 @@ export function readX3p(bytes: Uint8Array, name: string): SurfaceFile {
         record1,
         axesElement,
         cloud,
+        isProfile,
         columns,
         rows,
         x,
@@ -178,7 +191,8 @@ export function readX3p(bytes: Uint8Array, name: string): SurfaceFile {
         binary: !!link,
         // The step of a profile with an absolute axis comes from its positions.
         profile:
-          profileAxis({ cloud, columns, rows, x, y }) && (x.absolute || y.absolute)
+          profileAxis({ cloud, isProfile, columns, rows, x, y }) &&
+          (x.absolute || y.absolute)
             ? layer(0)
             : null,
       }),
@@ -339,7 +353,7 @@ function decodeText(
 
 /** The axis along which a profile of a single row or column runs. */
 function profileAxis(layout: Layout): 'x' | 'y' | null {
-  if (layout.cloud) return null;
+  if (layout.cloud || !layout.isProfile) return null;
   if (layout.rows === 1 && layout.columns > 1) return 'x';
   if (layout.columns === 1 && layout.rows > 1) return 'y';
   return null;
@@ -389,8 +403,28 @@ function profileStep(
   return other.absolute ? null : { step: Math.abs(other.increment), assumed: true };
 }
 
+const FEATURE_TYPES = ['PRF', 'SUR', 'PCL'];
+
+/** The revisions that are read: ISO 25178-72:2017 and Amd 1:2020, as the text of the Revision element. */
+const REVISIONS = ['ISO5436 - 2000', 'ISO25178-72:2017/DAM1'];
+
+/**
+ * The revision of a file as its text, with any dash read as the hyphen. A file without one is read as ISO 25178-72:2017.
+ *
+ * @throws FormatError if the text is none of the known revisions.
+ */
+function revisionOf(record1: Element): string | undefined {
+  const given = text(child(record1, 'Revision'));
+  if (given === undefined) return undefined;
+  const revision = given.replace(/[\u2010-\u2015\u2212]/g, '-');
+  if (!REVISIONS.includes(revision)) throw new FormatError(`Unknown revision ${given}`);
+  return revision;
+}
+
 interface Layout {
   cloud: boolean;
+  /** Whether the data is a profile, which the type of the file decides. */
+  isProfile: boolean;
   columns: number;
   rows: number;
   x: Axis;
@@ -479,6 +513,7 @@ function toSurface(arrays: Map<string, Float32Array>, layout: Layout): Surface {
         z: heights,
         x: along === 'x' ? positions : across,
         y: along === 'y' ? positions : across,
+        profile: true,
       };
     }
   }
@@ -499,6 +534,7 @@ function toSurface(arrays: Map<string, Float32Array>, layout: Layout): Surface {
     z,
     x,
     y,
+    ...(along ? { profile: true } : {}),
   };
 }
 
@@ -507,6 +543,7 @@ interface Context {
   record1: Element;
   axesElement: Element;
   cloud: boolean;
+  isProfile: boolean;
   columns: number;
   rows: number;
   x: Axis;
@@ -522,7 +559,7 @@ function typeName(axis: Axis): string | undefined {
 }
 
 function describe(c: Context): InfoSection[] {
-  const feature = featureOf(c.cloud, c.columns, c.rows);
+  const feature = featureOf(c.cloud, c.columns, c.rows, c.isProfile);
   const regular = c.profile ? c.profile.x === null : !c.x.absolute && !c.y.absolute;
   const record2 = child(c.root, 'Record2');
   const value = (...path: string[]): string | undefined => {
@@ -543,9 +580,9 @@ function describe(c: Context): InfoSection[] {
 
   return describeFile({
     format: `x3p ${c.binary ? 'binary' : 'XML'}`,
-    revision: text(child(c.record1, 'Revision')) ?? 'not set',
+    revision: revisionOf(c.record1) ?? 'not set',
     feature,
-    size: sizeText(feature, c.columns, c.rows),
+    dimension: dimensionText(feature, c.columns, c.rows),
     step: regular
       ? c.profile
         ? stepText(
@@ -557,6 +594,7 @@ function describe(c: Context): InfoSection[] {
           )
         : stepText(feature, Math.abs(c.x.increment), Math.abs(c.y.increment), c.columns)
       : 'irregular',
+    axis: axisText(c.x.absolute, c.y.absolute, c.z.absolute),
     types: { x: typeName(c.x), y: typeName(c.y), z: TYPE_NAMES[c.z.type] as string },
     placement:
       turned || offsets.some((offset) => offset !== 0)
@@ -574,6 +612,7 @@ function describe(c: Context): InfoSection[] {
       Identification: value('ProbingSystem', 'Identification'),
     },
     creator: value('Creator'),
-    creation: formatDate(value('Date')),
+    comment: value('Comment'),
+    date: formatDate(value('Date')),
   });
 }
