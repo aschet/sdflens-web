@@ -289,7 +289,7 @@ async function openBytes(bytes: Uint8Array, name: string): Promise<void> {
     app.dataset.state = 'loaded';
     $('fileName').textContent = name;
     $('fileName').title = name;
-    document.title = `${name} · sdflens web`;
+    document.title = `${name} · sdflens`;
     setView(startView(state.surface as Surface, available()));
   } catch (error) {
     toast(
