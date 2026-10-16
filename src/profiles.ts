@@ -29,11 +29,6 @@ export function middleProfile(surface: Surface, axis: ProfileAxis): number {
   return Math.floor((axis === 'x' ? surface.rows : surface.columns) / 2);
 }
 
-/** The axis along which the profile runs; an irregular profile has its own. */
-export function alongAxis(surface: Surface, axis: ProfileAxis): ProfileAxis {
-  return irregularProfile(surface)?.axis ?? axis;
-}
-
 /** Whether a profile can run along ``axis``: it needs more than one point along it. */
 export function canRun(surface: Surface, axis: ProfileAxis): boolean {
   return (axis === 'x' ? surface.columns : surface.rows) > 1;
@@ -72,12 +67,8 @@ export function profileSeries(
   return { values, step: surface.stepY, count: surface.columns, positions: null };
 }
 
-/** The text for a point of a profile: its position along the profile and its height. */
-export function profileReadout(
-  axis: ProfileAxis,
-  position: number,
-  value: number,
-): string {
+/** The text for a point of a profile: its length l along the profile and its height. */
+export function profileReadout(position: number, value: number): string {
   const z = Number.isFinite(value) ? formatLength(value) : 'not measured';
-  return `${axis}=${formatLength(position)}, z=${z}`;
+  return `l=${formatLength(position)}, z=${z}`;
 }

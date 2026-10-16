@@ -112,6 +112,10 @@ describe('layers and positions', () => {
     expect(irregularProfile(diagonal)).toMatchObject({ axis: 'x' });
     expect(diagonal.x?.[3]).toBeCloseTo(3e-6, 12);
     expect(diagonal.y?.[3]).toBeCloseTo(3e-6, 12);
+    // Its positions are the lengths along the path, which starts at 0.
+    const lengths = irregularProfile(diagonal)?.positions;
+    expect(lengths?.[0]).toBe(0);
+    expect(lengths?.[3]).toBeCloseTo(3e-6 * Math.SQRT2, 12);
     // Garbage along it falls back to the step of the other axis, and says so.
     const along = readFile(profile(absolute, incremental, junk), 'b.x3p');
     expect(along.layer(0)).toMatchObject({ x: null, stepAssumed: true });
