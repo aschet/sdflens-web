@@ -29,6 +29,7 @@ export function unevenProfile(positions: number[]): Surface {
     z: Float32Array.from(positions, (p) => p * 2),
     x,
     y: new Float32Array(x.length),
+    profile: true,
   };
 }
 

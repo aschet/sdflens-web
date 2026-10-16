@@ -19,6 +19,8 @@ export interface Surface {
   /** Positions of the points when the axes are not regular, otherwise null. */
   x: Float32Array | null;
   y: Float32Array | null;
+  /** Set for a profile whose points have positions of their own, which the type of the file declares. */
+  profile?: boolean;
 }
 
 export interface InfoSection {
@@ -116,7 +118,8 @@ export function lengthAlong(x: Float32Array, y: Float32Array): Float32Array {
 export function irregularProfile(
   surface: Surface,
 ): { axis: 'x' | 'y'; positions: Float32Array } | null {
-  if (surface.kind !== 'grid' || !surface.x || !surface.y) return null;
+  if (surface.kind !== 'grid' || !surface.profile || !surface.x || !surface.y)
+    return null;
   const axis =
     surface.rows === 1 && surface.columns > 1
       ? 'x'

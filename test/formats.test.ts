@@ -134,6 +134,44 @@ describe('layers and positions', () => {
     expect(even.stepX).toBeCloseTo(2e-6, 12);
   });
 
+  it('lets the declared type decide whether data of one row is a profile', () => {
+    const axis = (type: string, increment: string): string =>
+      `<AxisType>${type}</AxisType><DataType>D</DataType><Increment>${increment}</Increment><Offset>0</Offset>`;
+    // Uneven positions along x: not on a regular grid.
+    const file = (feature: string | null, rows = 1): Uint8Array => {
+      const data = [0, 1e-6, 3e-6, 4e-6].map((v) => `<Datum>${v};${v / 10}</Datum>`);
+      const xml =
+        `<?xml version="1.0"?><ISO5436_2><Record1><Revision>x</Revision>` +
+        (feature === null ? '' : `<FeatureType>${feature}</FeatureType>`) +
+        `<Axes><CX>${axis('A', '1')}</CX><CY>${axis('I', '1e-6')}</CY><CZ>${axis('A', '1')}</CZ></Axes></Record1>` +
+        `<Record3><MatrixDimension><SizeX>${4 / rows}</SizeX><SizeY>${rows}</SizeY><SizeZ>1</SizeZ></MatrixDimension>` +
+        `<DataList>${data.join('')}</DataList></Record3></ISO5436_2>`;
+      return zipSync({ 'main.xml': strToU8(xml) });
+    };
+    const layer = (
+      feature: string | null,
+      rows = 1,
+    ): ReturnType<typeof irregularProfile> =>
+      irregularProfile(readFile(file(feature, rows), 'p.x3p').layer(0));
+
+    expect(layer('PRF')).toMatchObject({ axis: 'x' });
+    // A surface of one row is a surface, however irregular its points are.
+    expect(layer('SUR')).toBeNull();
+    // A file without a type is judged by its shape.
+    expect(layer(null)).toMatchObject({ axis: 'x' });
+    // A profile has a single row: with more it is a surface.
+    expect(layer('PRF', 2)).toBeNull();
+    expect(() => readFile(file('XYZ'), 'p.x3p')).toThrow(/Unknown FeatureType XYZ/);
+    expect(readFile(file('PRF'), 'p.x3p').info[0]?.rows).toContainEqual([
+      'Feature',
+      'Profile',
+    ]);
+    expect(readFile(file('SUR'), 'p.x3p').info[0]?.rows).toContainEqual([
+      'Feature',
+      'Surface',
+    ]);
+  });
+
   it('puts the first row of a BCR file at y = 0 like the other dialects', () => {
     const bcr = readFile(load('bcr1_surface_binary.sdf'), 'bcr.sdf').layer(0);
     const iso = readFile(load('iso1_surface_binary.sdf'), 'iso.sdf').layer(0);

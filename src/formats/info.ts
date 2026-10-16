@@ -48,8 +48,13 @@ export function isPlaceholder(value: string | undefined): boolean {
 }
 
 /** A profile is a surface of a single row or a single column. */
-export function featureOf(cloud: boolean, columns: number, rows: number): Feature {
-  return cloud ? 'Point cloud' : rows === 1 || columns === 1 ? 'Profile' : 'Surface';
+export function featureOf(
+  cloud: boolean,
+  columns: number,
+  rows: number,
+  profile: boolean = rows === 1 || columns === 1,
+): Feature {
+  return cloud ? 'Point cloud' : profile ? 'Profile' : 'Surface';
 }
 
 export function sizeText(feature: Feature, columns: number, rows: number): string {
