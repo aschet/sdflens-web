@@ -180,7 +180,6 @@ export function readX3p(bytes: Uint8Array, name: string): SurfaceFile {
       describe({
         root,
         record1,
-        axesElement,
         cloud,
         isProfile,
         columns,
@@ -541,7 +540,6 @@ function toSurface(arrays: Map<string, Float32Array>, layout: Layout): Surface {
 interface Context {
   root: Element;
   record1: Element;
-  axesElement: Element;
   cloud: boolean;
   isProfile: boolean;
   columns: number;
@@ -568,16 +566,6 @@ function describe(c: Context): InfoSection[] {
     return text(element);
   };
 
-  const rotation = child(c.axesElement, 'Rotation');
-  const offsets = ['CX', 'CY', 'CZ'].map((name) =>
-    Number(text(child(child(c.axesElement, name) as Element, 'Offset')) ?? 0),
-  );
-  const turned =
-    rotation !== undefined &&
-    Array.from(rotation.children).some(
-      (e, i) => Math.abs(Number(e.textContent) - (i % 4 === 0 ? 1 : 0)) > 1e-9,
-    );
-
   return describeFile({
     format: `x3p ${c.binary ? 'binary' : 'XML'}`,
     revision: revisionOf(c.record1) ?? 'not set',
@@ -596,10 +584,6 @@ function describe(c: Context): InfoSection[] {
       : 'irregular',
     axis: axisText(c.x.absolute, c.y.absolute, c.z.absolute),
     types: { x: typeName(c.x), y: typeName(c.y), z: TYPE_NAMES[c.z.type] as string },
-    placement:
-      turned || offsets.some((offset) => offset !== 0)
-        ? 'stored in the file, not applied'
-        : undefined,
     instrument: {
       Manufacturer: value('Instrument', 'Manufacturer'),
       Model: value('Instrument', 'Model'),
