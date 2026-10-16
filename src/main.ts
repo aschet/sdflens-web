@@ -451,6 +451,13 @@ function renderInfo(): void {
   for (const section of file.info) {
     const heading = document.createElement('h3');
     heading.textContent = section.title;
+    if (section.text !== undefined) {
+      const text = document.createElement('p');
+      text.className = 'info-text';
+      text.textContent = section.text;
+      body.append(heading, text);
+      continue;
+    }
     const list = document.createElement('dl');
     for (const [label, value] of section.rows) {
       const term = document.createElement('dt');

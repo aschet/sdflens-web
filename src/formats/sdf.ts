@@ -12,11 +12,12 @@ import {
 } from '../model';
 import { formatLength } from '../units';
 import {
+  axisText,
   describeFile,
   featureOf,
   formatDate,
   safely,
-  sizeText,
+  dimensionText,
   stepText,
 } from './info';
 
@@ -488,13 +489,14 @@ function describe(header: Header): InfoSection[] {
     format: `SDF ${header.binary ? 'binary' : 'ASCII'}`,
     revision: header.revision,
     feature,
-    size: sizeText(feature, header.columns, header.rows),
+    dimension: dimensionText(feature, header.columns, header.rows),
     step: stepText(feature, header.xScale, header.yScale, header.columns),
+    axis: axisText(false, false, true),
     // The lateral axes are given by their steps; only the heights are stored.
     types: { z: header.type.name },
     resolution: header.zResolution < 0 ? undefined : formatLength(header.zResolution),
     // An SDF file names only the manufacturer.
-    creation: formatDate(header.created),
+    date: formatDate(header.created),
     instrument: { Manufacturer: header.manufacturer },
     probing: {},
   });

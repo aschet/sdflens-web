@@ -26,6 +26,8 @@ export interface Surface {
 export interface InfoSection {
   title: string;
   rows: [label: string, value: string][];
+  /** Free text of its own, such as the comment of a file, instead of rows. */
+  text?: string;
 }
 
 export interface SurfaceFile {

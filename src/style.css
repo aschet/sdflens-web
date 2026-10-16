@@ -759,6 +759,12 @@ input[type='range'] {
   color: var(--muted);
 }
 
+.drawer-body .info-text {
+  margin: 0;
+  overflow-wrap: anywhere;
+  white-space: pre-line;
+}
+
 .drawer-body dd {
   margin: 0;
   overflow-wrap: anywhere;

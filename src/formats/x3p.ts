@@ -12,11 +12,12 @@ import {
   type SurfaceFile,
 } from '../model';
 import {
+  axisText,
   describeFile,
   featureOf,
   formatDate,
   safely,
-  sizeText,
+  dimensionText,
   stepText,
 } from './info';
 
@@ -581,7 +582,7 @@ function describe(c: Context): InfoSection[] {
     format: `x3p ${c.binary ? 'binary' : 'XML'}`,
     revision: revisionOf(c.record1) ?? 'not set',
     feature,
-    size: sizeText(feature, c.columns, c.rows),
+    dimension: dimensionText(feature, c.columns, c.rows),
     step: regular
       ? c.profile
         ? stepText(
@@ -593,6 +594,7 @@ function describe(c: Context): InfoSection[] {
           )
         : stepText(feature, Math.abs(c.x.increment), Math.abs(c.y.increment), c.columns)
       : 'irregular',
+    axis: axisText(c.x.absolute, c.y.absolute, c.z.absolute),
     types: { x: typeName(c.x), y: typeName(c.y), z: TYPE_NAMES[c.z.type] as string },
     placement:
       turned || offsets.some((offset) => offset !== 0)
@@ -610,6 +612,7 @@ function describe(c: Context): InfoSection[] {
       Identification: value('ProbingSystem', 'Identification'),
     },
     creator: value('Creator'),
-    creation: formatDate(value('Date')),
+    comment: value('Comment'),
+    date: formatDate(value('Date')),
   });
 }
