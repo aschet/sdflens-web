@@ -29,7 +29,7 @@
     "eslint-config-prettier": "^10.1.8",
     "happy-dom": "^20.14.6",
     "prettier": "^3.9.10",
-    "typescript": "^5.9.3",
+    "typescript": "^7.0.2",
     "typescript-eslint": "^8.71.1",
     "vite": "^8.3.4",
     "vite-plugin-singlefile": "^2.3.3",
