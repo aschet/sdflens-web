@@ -178,6 +178,11 @@ input:focus-visible,
   padding: 0;
 }
 
+.button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
 .button.large {
   height: 44px;
   padding: 0 22px;
@@ -525,6 +530,7 @@ input:focus-visible,
 #app[data-state='empty'] .floating,
 #app[data-state='empty'] #fileName,
 #app[data-state='empty'] #shotButton,
+#app[data-state='empty'] #exportButton,
 #app[data-state='empty'] #displayButton,
 #app[data-state='empty'] #infoButton,
 #app[data-state='empty'] .views {

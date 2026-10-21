@@ -26,3 +26,7 @@ npm run check      # lint, format, type check, build and tests with coverage
 The tests read the files of `test/samples` and compare them with what [sdfio](https://github.com/aschet/sdfio) and
 [x3pio](https://github.com/aschet/x3pio) read from the same files. `tools/make_expected.py` writes
 `test/expected.json` from these libraries.
+
+The GLB export is compared with the one of sdflens in the same way: `tools/make_expected_glb.py` writes
+`test/expected-glb.json` from [sdflens](https://github.com/aschet/sdflens), and the tests also check the files with the
+[glTF Validator](https://github.com/KhronosGroup/glTF-Validator).

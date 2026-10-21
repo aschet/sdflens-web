@@ -71,6 +71,20 @@ export function nextLayer(current: number, delta: number, count: number): number
   return (((current + delta) % count) + count) % count;
 }
 
+/** Whether the surface is a shape to take to other 3D tools. A profile is a line, and is not. */
+export function canExportModel(surface: Surface | null): boolean {
+  if (!surface) return false;
+  const line =
+    surface.profile === true ||
+    (surface.kind === 'grid' && (surface.rows === 1 || surface.columns === 1));
+  return !line;
+}
+
+/** The name of the 3D model file: the name of the file without its extension. */
+export function modelName(fileName: string): string {
+  return `${fileName.replace(/\.[^.]+$/, '')}.glb`;
+}
+
 /** The name of the picture file: the name of the file without its extension, and the view. */
 export function screenshotName(fileName: string, view: ViewName): string {
   return `${fileName.replace(/\.[^.]+$/, '')}-${view}.png`;
