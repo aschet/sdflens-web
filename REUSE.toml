@@ -1,7 +1,7 @@
 version = 1
 
 [[annotations]]
-path = ["README.md", "index.html", "package.json", "package-lock.json", "tsconfig.json", ".gitignore", ".editorconfig", ".prettierignore", ".prettierrc.json", ".github/**", "THIRD-PARTY-NOTICES.txt", "test/expected.json", "LICENSE"]
+path = ["README.md", "index.html", "package.json", "package-lock.json", "tsconfig.json", ".gitignore", ".editorconfig", ".prettierignore", ".prettierrc.json", ".github/**", "THIRD-PARTY-NOTICES.txt", "test/expected.json", "test/expected-glb.json", "LICENSE"]
 SPDX-FileCopyrightText = "2026 Thomas Ascher <thomas.ascher@gmx.at>"
 SPDX-License-Identifier = "GPL-3.0-or-later"
 

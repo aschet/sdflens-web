@@ -15,6 +15,7 @@ import {
   type Surface,
   type SurfaceFile,
 } from './model';
+import { glbBytes } from './glb';
 import { buildMesh, type Mesh } from './render/mesh';
 import { ProfilePlot } from './render/profile';
 import { View2D } from './render/view2d';
@@ -31,7 +32,9 @@ import { Colorbar } from './ui/colorbar';
 import { Locator } from './ui/locator';
 import {
   availableViews,
+  canExportModel,
   effectiveTool,
+  modelName,
   nextLayer,
   screenshotName,
   startView,
@@ -231,6 +234,7 @@ function updateAvailability(): void {
     button.dataset.title ??= button.title;
     button.title = reason ? `${button.dataset.title}: ${reason}` : button.dataset.title;
   }
+  $<HTMLButtonElement>('exportButton').disabled = !canExportModel(state.surface);
 }
 
 function updateTools(): void {
@@ -646,25 +650,40 @@ async function screenshot(
   });
 }
 
-async function saveScreenshot(): Promise<void> {
-  const view = activeView();
-  if (!view || !state.file) return;
-  const host = $(
-    state.view === '3d' ? 'view3d' : state.view === '2d' ? 'view2d' : 'viewProfile',
-  );
-  const blob = await screenshot(view, host);
+/** Offers ``blob`` as a download called ``name``. */
+function save(blob: Blob, name: string): void {
   const link = document.createElement('a');
   link.href = URL.createObjectURL(blob);
-  link.download = screenshotName(state.file.name, state.view);
+  link.download = name;
   link.click();
   setTimeout(() => {
     URL.revokeObjectURL(link.href);
   }, 10_000);
 }
 
+async function saveScreenshot(): Promise<void> {
+  const view = activeView();
+  if (!view || !state.file) return;
+  const host = $(
+    state.view === '3d' ? 'view3d' : state.view === '2d' ? 'view2d' : 'viewProfile',
+  );
+  save(await screenshot(view, host), screenshotName(state.file.name, state.view));
+}
+
 $('shotButton').addEventListener('click', () => {
   void saveScreenshot();
 });
+
+/** Saves the surface or the points with the colors and the height scale that the 3D view shows. */
+function exportModel(): void {
+  if (!state.file || !state.surface || !canExportModel(state.surface)) return;
+  // The mesh of the view is used if it exists; the view takes its mesh from the state, so none is stored here.
+  const mesh = state.mesh ?? buildMesh(state.surface);
+  const bytes = glbBytes(mesh, currentLut(), state.zFactor, `sdflens web ${version}`);
+  save(new Blob([bytes], { type: 'model/gltf-binary' }), modelName(state.file.name));
+}
+
+$('exportButton').addEventListener('click', exportModel);
 
 // --------------------------------------------------------------------------------------- readout
 
