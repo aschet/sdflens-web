@@ -2,12 +2,11 @@
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-/** The 3D view as a binary glTF (GLB) file: the surface as triangles with normals, or a cloud as points. */
+/** The geometry of the 3D view as a binary glTF (GLB) file: the surface as triangles with normals, or a cloud as points. */
 
 import type { Mesh } from './render/mesh';
 
 const FLOAT = 5126;
-const UNSIGNED_BYTE = 5121;
 const UNSIGNED_INT = 5125;
 const ARRAY_BUFFER = 34962;
 const ELEMENT_ARRAY_BUFFER = 34963;
@@ -17,7 +16,7 @@ const TRIANGLES = 4;
 interface Part {
   data: Uint8Array;
   target: number;
-  type: 'SCALAR' | 'VEC3' | 'VEC4';
+  type: 'SCALAR' | 'VEC3';
   component: number;
   count: number;
 }
@@ -25,14 +24,6 @@ interface Part {
 /** The bytes of ``array`` as they lie in memory, which is little endian on every platform that runs a browser. */
 function bytes(array: Float32Array | Uint8Array | Uint32Array): Uint8Array {
   return new Uint8Array(array.buffer, array.byteOffset, array.byteLength);
-}
-
-/** The sRGB byte as the linear one, which glTF asks for in vertex colors. */
-function linear(value: number): number {
-  const fraction = value / 255;
-  const result =
-    fraction <= 0.04045 ? fraction / 12.92 : ((fraction + 0.055) / 1.055) ** 2.4;
-  return Math.round(result * 255);
 }
 
 /** Unit vertex normals: the face normals around each vertex, weighted by area. */
@@ -81,16 +72,11 @@ function padded(data: Uint8Array, filler: number): Uint8Array {
 /**
  * The GLB file of ``mesh``: its triangles with normals, or its points.
  *
- * The vertices have the colors of ``lut``, a table of 256 sRGB triplets, over the heights, and the heights the
- * exaggeration ``zFactor``, as the 3D view shows them. The size is scaled so that the longest lateral side is 1; the
- * real size is stored in the ``extras`` of the asset.
+ * The geometry is the real one, in meters, which glTF uses for its units, so that distances can be measured in the
+ * file. The height is not exaggerated and the vertices have no colors; a viewer can do both. The model is centered at
+ * the origin; where it lay in the coordinates of the data is stored in the ``extras`` of the asset.
  */
-export function glbBytes(
-  mesh: Mesh,
-  lut: Uint8Array,
-  zFactor: number,
-  generator: string,
-): Uint8Array<ArrayBuffer> {
+export function glbBytes(mesh: Mesh, generator: string): Uint8Array<ArrayBuffer> {
   // Only the vertices of measured points are written; the others have placeholders.
   const total = mesh.vertices.length / 3;
   const renumber = new Int32Array(total).fill(-1);
@@ -103,27 +89,20 @@ export function glbBytes(
   }
   if (used.length === 0) throw new Error('There are no measured points to export');
 
-  // z up becomes y up, which glTF has; the height is exaggerated.
+  // z up becomes y up, which glTF has. The mesh is normalized: the normals do not depend on the size, and the
+  // positions are scaled to meters.
   const vertices = new Float32Array(used.length * 3);
-  const colors = new Uint8Array(used.length * 4);
-  const range = mesh.zMax - mesh.zMin;
-  const colorScale = range > 0 ? mesh.scale / range : 0;
-  const entries = lut.length / 3;
-  const table = new Uint8Array(lut.length);
-  for (let i = 0; i < lut.length; i++) table[i] = linear(lut[i] as number);
+  const positions = new Float32Array(used.length * 3);
   used.forEach((source, target) => {
     const x = mesh.vertices[source * 3] as number;
     const y = mesh.vertices[source * 3 + 1] as number;
     const z = mesh.vertices[source * 3 + 2] as number;
     vertices[target * 3] = x;
-    vertices[target * 3 + 1] = z * zFactor;
+    vertices[target * 3 + 1] = z;
     vertices[target * 3 + 2] = -y;
-    const fraction = Math.min(Math.max(z * colorScale + 0.5, 0), 1);
-    const entry = Math.round(fraction * (entries - 1)) * 3;
-    colors[target * 4] = table[entry] as number;
-    colors[target * 4 + 1] = table[entry + 1] as number;
-    colors[target * 4 + 2] = table[entry + 2] as number;
-    colors[target * 4 + 3] = 255;
+    positions[target * 3] = x * mesh.scale;
+    positions[target * 3 + 1] = z * mesh.scale;
+    positions[target * 3 + 2] = -y * mesh.scale;
   });
   const triangles = new Uint32Array(mesh.isCloud ? 0 : mesh.triangles.length);
   for (let i = 0; i < triangles.length; i++)
@@ -131,7 +110,7 @@ export function glbBytes(
 
   const parts: Part[] = [
     {
-      data: bytes(vertices),
+      data: bytes(positions),
       target: ARRAY_BUFFER,
       type: 'VEC3',
       component: FLOAT,
@@ -149,14 +128,6 @@ export function glbBytes(
     });
     attributes.NORMAL = parts.length - 1;
   }
-  parts.push({
-    data: colors,
-    target: ARRAY_BUFFER,
-    type: 'VEC4',
-    component: UNSIGNED_BYTE,
-    count: used.length,
-  });
-  attributes.COLOR_0 = parts.length - 1;
   if (triangles.length > 0) {
     parts.push({
       data: bytes(triangles),
@@ -184,17 +155,16 @@ export function glbBytes(
       componentType: part.component,
       count: part.count,
       type: part.type,
-      ...(part.component === UNSIGNED_BYTE ? { normalized: true } : {}),
     });
     chunks.push(data);
     offset += data.length;
   }
   const low = [Infinity, Infinity, Infinity];
   const high = [-Infinity, -Infinity, -Infinity];
-  for (let i = 0; i < vertices.length; i++) {
+  for (let i = 0; i < positions.length; i++) {
     const axis = i % 3;
-    low[axis] = Math.min(low[axis] as number, vertices[i] as number);
-    high[axis] = Math.max(high[axis] as number, vertices[i] as number);
+    low[axis] = Math.min(low[axis] as number, positions[i] as number);
+    high[axis] = Math.max(high[axis] as number, positions[i] as number);
   }
   (accessors[0] as Record<string, unknown>).min = low;
   (accessors[0] as Record<string, unknown>).max = high;
@@ -210,10 +180,9 @@ export function glbBytes(
       version: '2.0',
       generator,
       extras: {
-        unit: 'the longest lateral side is 1',
+        unit: 'meters',
         extent_meters: [mesh.extent[0] * mesh.scale, mesh.extent[1] * mesh.scale],
-        scale_meters: mesh.scale,
-        z_factor: zFactor,
+        origin_meters: mesh.origin,
       },
     },
     scene: 0,
@@ -224,7 +193,7 @@ export function glbBytes(
     materials: [
       {
         pbrMetallicRoughness: {
-          baseColorFactor: [1, 1, 1, 1],
+          baseColorFactor: [0.3, 0.3, 0.3, 1],
           metallicFactor: 0,
           roughnessFactor: 0.85,
         },

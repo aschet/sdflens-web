@@ -6,7 +6,6 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { validateBytes } from 'gltf-validator';
 import { describe, expect, it } from 'vitest';
-import { buildLut } from '../src/colormap';
 import { readFile } from '../src/formats';
 import { glbBytes } from '../src/glb';
 import type { Surface } from '../src/model';
@@ -14,28 +13,24 @@ import { buildMesh } from '../src/render/mesh';
 import { canExportModel, modelName } from '../src/viewing';
 import { grid } from './helpers';
 
-const LUT = buildLut('Viridis');
-
 interface Accessor {
   bufferView: number;
   componentType: number;
   count: number;
   type: string;
-  normalized?: boolean;
-  min?: number[];
-  max?: number[];
+}
+
+interface Primitive {
+  attributes: Record<string, number>;
+  mode: number;
+  indices?: number;
 }
 
 interface Parsed {
   document: {
     asset: { extras: Record<string, unknown> };
-    meshes: {
-      primitives: {
-        attributes: Record<string, number>;
-        mode: number;
-        indices?: number;
-      }[];
-    }[];
+    meshes: { primitives: Primitive[] }[];
+    materials: { pbrMetallicRoughness: { metallicFactor: number } }[];
     accessors: Accessor[];
     bufferViews: { byteOffset: number; byteLength: number }[];
   };
@@ -58,49 +53,49 @@ function parse(data: Uint8Array): Parsed {
   return { document, binary: data.slice(start, start + binaryLength) };
 }
 
-function floats(parsed: Parsed, index: number): Float32Array {
+function slice(parsed: Parsed, index: number, size: number): ArrayBuffer {
   const accessor = parsed.document.accessors[index] as Accessor;
   const view = parsed.document.bufferViews[
     accessor.bufferView
   ] as Parsed['document']['bufferViews'][number];
-  const width = accessor.type === 'VEC3' ? 3 : 1;
-  return new Float32Array(
-    parsed.binary.buffer.slice(
-      view.byteOffset,
-      view.byteOffset + accessor.count * width * 4,
-    ),
+  return (parsed.binary.buffer as ArrayBuffer).slice(
+    view.byteOffset,
+    view.byteOffset + accessor.count * size,
   );
 }
 
-function bytesOf(parsed: Parsed, index: number): Uint8Array {
+function floats(parsed: Parsed, index: number): Float32Array {
   const accessor = parsed.document.accessors[index] as Accessor;
-  const view = parsed.document.bufferViews[
-    accessor.bufferView
-  ] as Parsed['document']['bufferViews'][number];
-  return parsed.binary.slice(view.byteOffset, view.byteOffset + accessor.count * 4);
+  return new Float32Array(slice(parsed, index, accessor.type === 'VEC3' ? 12 : 4));
 }
 
 function indices(parsed: Parsed, index: number): Uint32Array {
-  const accessor = parsed.document.accessors[index] as Accessor;
-  const view = parsed.document.bufferViews[
-    accessor.bufferView
-  ] as Parsed['document']['bufferViews'][number];
-  return new Uint32Array(
-    parsed.binary.buffer.slice(view.byteOffset, view.byteOffset + accessor.count * 4),
-  );
+  return new Uint32Array(slice(parsed, index, 4));
 }
 
-function build(surface: Surface, zFactor = 1): Parsed {
-  return parse(glbBytes(buildMesh(surface), LUT, zFactor, 'test'));
+function primitiveOf(parsed: Parsed): Primitive {
+  return parsed.document.meshes[0]?.primitives[0] as Primitive;
+}
+
+function positionsOf(parsed: Parsed): Float32Array {
+  return floats(parsed, primitiveOf(parsed).attributes.POSITION as number);
+}
+
+function build(surface: Surface): Parsed {
+  return parse(glbBytes(buildMesh(surface), 'test'));
+}
+
+function range(values: Float32Array, axis: number): number {
+  const along = Array.from(values.filter((_, i) => i % 3 === axis));
+  return Math.max(...along) - Math.min(...along);
 }
 
 describe('GLB export', () => {
-  it('writes the triangles with normals and colors of a surface', () => {
+  it('writes the triangles with normals of a surface, and no colors', () => {
     const surface = grid(4, 5, (r, c) => (r * 5 + c) * 1e-9);
     surface.z[4] = NaN;
     const parsed = build(surface);
-    const primitive = parsed.document.meshes[0]
-      ?.primitives[0] as Parsed['document']['meshes'][number]['primitives'][number];
+    const primitive = primitiveOf(parsed);
     expect(primitive.mode).toBe(4);
     const positions = floats(parsed, primitive.attributes.POSITION as number);
     const normals = floats(parsed, primitive.attributes.NORMAL as number);
@@ -117,32 +112,21 @@ describe('GLB export', () => {
           normals[i + 2] as number,
         ),
       ).toBeCloseTo(1, 5);
-    const accessor = parsed.document.accessors[
-      primitive.attributes.COLOR_0 as number
-    ] as Accessor;
-    expect(accessor.normalized).toBe(true);
-    expect(accessor.type).toBe('VEC4');
+    expect(primitive.attributes.COLOR_0).toBeUndefined();
+    expect(parsed.document.materials[0]?.pbrMetallicRoughness.metallicFactor).toBe(0);
   });
 
-  it('stands the surface up at true scale and exaggerates the height on request', () => {
-    const surface = grid(4, 6, (r, c) => (r * 6 + c) * 1e-9);
-    const true_ = floats(build(surface), 0);
-    const tall = floats(build(surface, 4), 0);
-    for (let i = 0; i < true_.length; i += 3) {
-      expect(tall[i + 1]).toBeCloseTo(4 * (true_[i + 1] as number), 6); // y is the height
-      expect(tall[i]).toBe(true_[i]);
-      expect(tall[i + 2]).toBe(true_[i + 2]);
-    }
-    const xs = Array.from(true_.filter((_, i) => i % 3 === 0));
-    expect(Math.max(...xs) - Math.min(...xs)).toBeCloseTo(1, 5); // the longest side is 1
+  it('stands the surface up in meters, so that distances can be measured', () => {
+    const surface = grid(4, 6, (r, c) => (r * 6 + c) * 1e-9, 2e-6);
+    const positions = positionsOf(build(surface));
+    expect(range(positions, 0)).toBeCloseTo(10e-6, 11); // 5 steps of 2 µm
+    expect(range(positions, 2)).toBeCloseTo(6e-6, 11); // 3 steps of 2 µm, along -y
+    expect(range(positions, 1)).toBeCloseTo(23e-9, 12); // y is up, the heights are not exaggerated
   });
 
   it('gives a flat surface normals that point up', () => {
     const parsed = build(grid(3, 4, () => 1e-9));
-    const normals = floats(
-      parsed,
-      parsed.document.meshes[0]?.primitives[0]?.attributes.NORMAL as number,
-    );
+    const normals = floats(parsed, primitiveOf(parsed).attributes.NORMAL as number);
     for (let i = 0; i < normals.length; i += 3) {
       expect(normals[i]).toBeCloseTo(0, 6);
       expect(normals[i + 1]).toBeCloseTo(1, 6);
@@ -150,34 +134,7 @@ describe('GLB export', () => {
     }
   });
 
-  it('colors the lowest and the highest point with the ends of the color table, as linear values', () => {
-    const parsed = build(grid(4, 5, (r, c) => (r * 5 + c) * 1e-9));
-    const attributes = parsed.document.meshes[0]?.primitives[0]?.attributes as Record<
-      string,
-      number
-    >;
-    const heights = floats(parsed, attributes.POSITION as number).filter(
-      (_, i) => i % 3 === 1,
-    );
-    const colors = bytesOf(parsed, attributes.COLOR_0 as number);
-    const linear = (value: number): number => {
-      const f = value / 255;
-      return Math.round(
-        (f <= 0.04045 ? f / 12.92 : ((f + 0.055) / 1.055) ** 2.4) * 255,
-      );
-    };
-    const low = heights.indexOf(Math.min(...heights));
-    const high = heights.indexOf(Math.max(...heights));
-    expect(Array.from(colors.subarray(low * 4, low * 4 + 3))).toEqual(
-      Array.from(LUT.subarray(0, 3), linear),
-    );
-    expect(Array.from(colors.subarray(high * 4, high * 4 + 3))).toEqual(
-      Array.from(LUT.subarray(765, 768), linear),
-    );
-  });
-
   it('writes a point cloud as points', () => {
-    const x = Float32Array.from([0, 1e-6, 2e-6, 3e-6]);
     const cloud: Surface = {
       kind: 'cloud',
       columns: 4,
@@ -185,31 +142,36 @@ describe('GLB export', () => {
       stepX: 0,
       stepY: 0,
       z: Float32Array.from([0, 1e-6, 0, 2e-6]),
-      x,
+      x: Float32Array.from([0, 1e-6, 2e-6, 3e-6]),
       y: Float32Array.from([0, 2e-6, 1e-6, 0]),
     };
     const parsed = build(cloud);
-    const primitive = parsed.document.meshes[0]
-      ?.primitives[0] as Parsed['document']['meshes'][number]['primitives'][number];
+    const primitive = primitiveOf(parsed);
     expect(primitive.mode).toBe(0);
     expect(primitive.indices).toBeUndefined();
     expect(primitive.attributes.NORMAL).toBeUndefined();
-    expect(floats(parsed, 0).length).toBe(12);
+    expect(positionsOf(parsed).length).toBe(12);
+    expect(range(positionsOf(parsed), 0)).toBeCloseTo(3e-6, 12);
   });
 
-  it('keeps the real size in the asset', () => {
+  it('keeps the unit and the origin of the data in the asset', () => {
     const extras = build(grid(4, 6, () => 0, 2e-6)).document.asset.extras;
+    expect(extras.unit).toBe('meters');
     expect(extras.extent_meters).toEqual([
       expect.closeTo(10e-6, 12),
       expect.closeTo(6e-6, 12),
     ]);
-    expect(extras.scale_meters).toBeCloseTo(10e-6, 12);
-    expect(extras.z_factor).toBe(1);
+    expect(extras.origin_meters).toEqual([
+      expect.closeTo(5e-6, 12),
+      expect.closeTo(3e-6, 12),
+      expect.closeTo(0, 12),
+    ]);
+    expect(extras.z_factor).toBeUndefined();
   });
 
   it('refuses a surface without measured points', () => {
     const empty = grid(2, 2, () => NaN);
-    expect(() => glbBytes(buildMesh(empty), LUT, 1, 'test')).toThrow('measured');
+    expect(() => glbBytes(buildMesh(empty), 'test')).toThrow('measured');
   });
 
   it('is a valid glTF file, for a surface and for points', async () => {
@@ -225,7 +187,7 @@ describe('GLB export', () => {
       y: Float32Array.from([0, 0, 1e-6]),
     };
     for (const data of [surface, cloud]) {
-      const report = await validateBytes(glbBytes(buildMesh(data), LUT, 2, 'test'));
+      const report = await validateBytes(glbBytes(buildMesh(data), 'test'));
       expect(report.issues.messages).toEqual([]);
       expect(report.issues.numErrors + report.issues.numWarnings).toBe(0);
     }
@@ -245,7 +207,6 @@ interface Want {
   vertices: number;
   mode: number;
   positions: number[];
-  colors: number[];
   extentMeters: number[];
   indices?: number;
   indexSum?: number;
@@ -256,6 +217,13 @@ const wanted = JSON.parse(
   readFileSync(join(process.cwd(), 'test', 'expected-glb.json'), 'utf-8'),
 ) as Record<string, Want>;
 
+function sums(values: Float32Array): number[] {
+  const out = [0, 0, 0];
+  for (let i = 0; i < values.length; i++)
+    out[i % 3] = (out[i % 3] as number) + (values[i] as number);
+  return out;
+}
+
 describe('GLB export of the sample files', () => {
   for (const [name, want] of Object.entries(wanted)) {
     it(`matches what sdflens writes for ${name}`, () => {
@@ -264,49 +232,34 @@ describe('GLB export of the sample files', () => {
       );
       const surface = readFile(data, name).layer(0);
       expect(canExportModel(surface)).toBe(true);
-      const parsed = parse(glbBytes(buildMesh(surface), LUT, 7.5, 'test'));
-      const primitive = parsed.document.meshes[0]
-        ?.primitives[0] as Parsed['document']['meshes'][number]['primitives'][number];
-      const positions = floats(parsed, primitive.attributes.POSITION as number);
+      const parsed = parse(glbBytes(buildMesh(surface), 'test'));
+      const primitive = primitiveOf(parsed);
+      const positions = positionsOf(parsed);
       expect(primitive.mode).toBe(want.mode);
       expect(positions.length / 3).toBe(want.vertices);
-      // The heights of the page are float32, so the sums agree to about seven digits.
-      const sums = (values: Float32Array): number[] => {
-        const out = [0, 0, 0];
-        for (let i = 0; i < values.length; i++)
-          out[i % 3] = (out[i % 3] as number) + (values[i] as number);
-        return out;
-      };
-      const close = (got: number[], expectedSums: number[], scale: number): void => {
-        got.forEach((value, i) => {
-          expect(Math.abs(value - (expectedSums[i] as number))).toBeLessThanOrEqual(
-            1e-4 * scale + 1e-6,
-          );
-        });
-      };
-      close(sums(positions), want.positions, want.vertices);
-      const extras = parsed.document.asset.extras.extent_meters as number[];
-      expect(extras[0]).toBeCloseTo(want.extentMeters[0] as number, 9);
-      expect(extras[1]).toBeCloseTo(want.extentMeters[1] as number, 9);
-      const colors = bytesOf(parsed, primitive.attributes.COLOR_0 as number);
-      const colorSums = [0, 0, 0, 0];
-      colors.forEach((value, i) => {
-        colorSums[i % 4] = (colorSums[i % 4] as number) + value;
-      });
-      colorSums.forEach((value, i) => {
-        // A height that falls on the edge of two entries of the table may take the other one.
-        expect(Math.abs(value - (want.colors[i] as number))).toBeLessThanOrEqual(
-          0.005 * (want.colors[i] as number) + 255,
+      // The heights of the page are float32, so the sums agree to about seven digits of the size.
+      const size = Math.max(...want.extentMeters);
+      const tolerance = 1e-4 * want.vertices * size;
+      sums(positions).forEach((value, i) => {
+        expect(Math.abs(value - (want.positions[i] as number))).toBeLessThanOrEqual(
+          tolerance,
         );
       });
+      const extent = parsed.document.asset.extras.extent_meters as number[];
+      expect(extent[0]).toBeCloseTo(want.extentMeters[0] as number, 9);
+      expect(extent[1]).toBeCloseTo(want.extentMeters[1] as number, 9);
       if (primitive.indices !== undefined) {
         const triangles = indices(parsed, primitive.indices);
         expect(triangles.length).toBe(want.indices);
         expect(triangles.reduce((total, value) => total + value, 0)).toBe(
           want.indexSum,
         );
-        const normals = floats(parsed, primitive.attributes.NORMAL as number);
-        close(sums(normals), want.normals as number[], want.vertices);
+        const normals = sums(floats(parsed, primitive.attributes.NORMAL as number));
+        normals.forEach((value, i) => {
+          expect(
+            Math.abs(value - ((want.normals as number[])[i] as number)),
+          ).toBeLessThanOrEqual(1e-4 * want.vertices);
+        });
       }
     });
   }

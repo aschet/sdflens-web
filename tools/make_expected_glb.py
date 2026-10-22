@@ -13,14 +13,12 @@ import struct
 from pathlib import Path
 
 import numpy as np
-from sdflens.colormap import build_lut
-from sdflens.gltf import ViewShape, glb_bytes
+from sdflens.gltf import glb_bytes
 from sdflens.surfacefile import build_mesh, build_model, read_surface_file
 
 SAMPLES = Path(__file__).parent.parent / "test" / "samples"
-Z_FACTOR = 7.5
-DTYPES = {5126: np.float32, 5121: np.uint8, 5125: np.uint32}
-WIDTHS = {"SCALAR": 1, "VEC3": 3, "VEC4": 4}
+DTYPES = {5126: np.float32, 5125: np.uint32}
+WIDTHS = {"SCALAR": 1, "VEC3": 3}
 
 
 def accessor(document: dict, binary: bytes, index: int) -> np.ndarray:
@@ -38,7 +36,7 @@ for path in sorted([*SAMPLES.glob("*.sdf"), *SAMPLES.glob("*.x3p")]):
     model = build_model(read_surface_file(str(path)))
     if model.is_profile:
         continue
-    data = glb_bytes(ViewShape(model, build_mesh(model), build_lut("Viridis")), Z_FACTOR)
+    data = glb_bytes(build_mesh(model), model)
     text_length = struct.unpack_from("<I", data, 12)[0]
     document = json.loads(data[20 : 20 + text_length])
     binary = data[28 + text_length :]
@@ -49,7 +47,6 @@ for path in sorted([*SAMPLES.glob("*.sdf"), *SAMPLES.glob("*.x3p")]):
         "vertices": len(positions),
         "mode": primitive["mode"],
         "positions": positions.sum(axis=0, dtype=np.float64).tolist(),
-        "colors": accessor(document, binary, attributes["COLOR_0"]).sum(axis=0, dtype=np.int64).tolist(),
         "extentMeters": document["asset"]["extras"]["extent_meters"],
     }
     if "indices" in primitive:
@@ -59,4 +56,4 @@ for path in sorted([*SAMPLES.glob("*.sdf"), *SAMPLES.glob("*.x3p")]):
         entry["normals"] = accessor(document, binary, attributes["NORMAL"]).sum(axis=0, dtype=np.float64).tolist()
     expected[path.name] = entry
 (SAMPLES.parent / "expected-glb.json").write_text(json.dumps(expected, indent=2) + "\n")
-print(f"{len(expected)} files at {Z_FACTOR}x")
+print(f"{len(expected)} files")
