@@ -674,12 +674,12 @@ $('shotButton').addEventListener('click', () => {
   void saveScreenshot();
 });
 
-/** Saves the surface or the points with the colors and the height scale that the 3D view shows. */
+/** Saves the surface or the points in real size, without the colors and the height scale of the view. */
 function exportModel(): void {
   if (!state.file || !state.surface || !canExportModel(state.surface)) return;
   // The mesh of the view is used if it exists; the view takes its mesh from the state, so none is stored here.
   const mesh = state.mesh ?? buildMesh(state.surface);
-  const bytes = glbBytes(mesh, currentLut(), state.zFactor, `sdflens web ${version}`);
+  const bytes = glbBytes(mesh, `sdflens web ${version}`);
   save(new Blob([bytes], { type: 'model/gltf-binary' }), modelName(state.file.name));
 }
 
